@@ -10,6 +10,13 @@ import cors from 'cors'; // Importa cors
 import pagoRoutes from './routes/pagoRoutes';
 import cron from 'node-cron';
 import { limpiarReservasPendientes } from './controllers/reservaController';
+
+//Actuales
+import afiliadoRoutes from './routes/afiliadoRoutes';
+
+
+
+
 // Configurar variables de entorno
 dotenv.config();
 
@@ -59,6 +66,10 @@ app.get('/config', (req: Request, res: Response) => {
 });
 
 // Rutas
+//actuales
+app.use('/api/afiliados', afiliadoRoutes);
+
+//nteriores
 app.use('/api/auth', authRoutes);
 app.use('/api/reservas', reservaRoutes);
 app.use('/api/usuarios', usuarioNormalRoutes);
