@@ -11,6 +11,8 @@ export interface ICompraCertificado extends Document {
   certificadoId: ICertificado["_id"];
   email: string;
   fechaCompra: Date;
+  preferenceId?: string;
+  estadoPago?: "pendiente" | "pagado" | "rechazado";
 }
 
 /**
@@ -30,6 +32,12 @@ const compraCertificadoSchema = new Schema<ICompraCertificado>({
   },
   email: { type: String, required: true },
   fechaCompra: { type: Date, default: Date.now },
+  preferenceId: { type: String },
+  estadoPago: {
+    type: String,
+    enum: ["pendiente", "pagado", "rechazado"],
+    default: "pendiente",
+  },
 });
 
 // ultimas modifcACIONES

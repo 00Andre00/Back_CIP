@@ -23,7 +23,7 @@ const app = express();
 // Configurar CORS de manera más flexible
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
-  'https://parroquiasdigitales.com', // Agrega tu dominio de producción real
+  '', // Agrega tu dominio de producción real
   // Puedes agregar más dominios permitidos aquí
 ];
 
@@ -73,7 +73,7 @@ cron.schedule('*/5 * * * *', async () => {
 });
 
 // Iniciar el servidor
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

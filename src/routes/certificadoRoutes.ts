@@ -6,39 +6,24 @@ import {
   buscarCertificadosPorDni 
 } from '../controllers/certificadoController';
 import { verificarCertificado } from '../controllers/verificacionController';
-import { 
-  crearPreferenciaCertificados, 
-  verificarPagoCertificados,  
-  procesarWebhookCertificados, 
-  completarCompraCertificados, 
-  verificarEstadoPagoCertificados
+import {
+  crearPreferenciaPagoCertificado,
+  webhook,
+  verificarPagoCertificado
 } from '../controllers/certificadoPagoController';
 
 const router = Router();
 
-// Crear certificado
+// Rutas para certificados
 router.post('/crear', asyncHandler(crearCertificado));
-
-// Registrar compra y enviar certificado
 router.post('/compra', asyncHandler(registrarCompraYEnviarCertificado));
-
-// Buscar certificados por DNI
 router.get('/buscar/:dni', asyncHandler(buscarCertificadosPorDni));
-
-// Ruta para verificar un certificado
 router.get('/verificar/:id', asyncHandler(verificarCertificado));
 
-// Crear preferencia para certificados
-router.post('/preference', asyncHandler(crearPreferenciaCertificados));
+// Rutas para MercadoPago
+router.post('/create_preference', asyncHandler(crearPreferenciaPagoCertificado));
+router.post('/webhook', asyncHandler(webhook));
+router.get('/webhook', asyncHandler(webhook));  // MercadoPago puede usar GET o POST
+router.get('/verificar-pago', asyncHandler(verificarPagoCertificado));
 
-// Verificar estado de pago de certificados
-router.get('/verificar', asyncHandler(verificarPagoCertificados));
-
-// Webhook de Mercado Pago para certificados
-router.post('/webhook', asyncHandler(procesarWebhookCertificados));
-
-// Completar compra de certificados - CORREGIDO
-router.post('/completar', asyncHandler(completarCompraCertificados));
-
-router.get('/estado', asyncHandler(verificarEstadoPagoCertificados));
 export default router;

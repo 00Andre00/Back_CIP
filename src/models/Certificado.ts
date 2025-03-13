@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 /**
  * Interfaz que define la estructura de un certificado.
@@ -18,6 +18,10 @@ export interface ICertificado extends Document {
   pagado: boolean;
   fechaPago?: Date;
   fechaCompra?: Date;
+  pagoId?: string;
+  estadoPago?: 'pendiente' | 'pagado' | 'rechazado';
+  _id: Types.ObjectId;
+  
 
   // Datos específicos para Bautismo
   padre?: string;
@@ -49,6 +53,11 @@ const certificadoSchema = new Schema<ICertificado>({
   fechaEmision: { type: Date, default: Date.now },
   detallesAdicionales: { type: String },
   dni: { type: String },
+  pagado: { type: Boolean, default: false },
+  fechaPago: { type: Date },
+  fechaCompra: { type: Date },
+  pagoId: { type: String },
+  estadoPago: { type: String, enum: ['pendiente', 'pagado', 'rechazado'], default: 'pendiente' },
   
   // Datos generales
   padrinos: { type: String },

@@ -2,14 +2,14 @@ import { Request, Response } from 'express';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import Reserva from '../models/Reserva';
 
-if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-    throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
-}
+// Configurar MercadoPago con tu access token
+const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || 'APP_USR-a29d72dc-8d29-4015-8805-a13a13e12ea3';
 
-const client = new MercadoPagoConfig({
-    accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
-    options: { timeout: 5000, idempotencyKey: 'abc' }
-});
+// Crear cliente de MercadoPago
+const client = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
+const preferenceClient = new Preference(client);
+const paymentClient = new Payment(client);
+
 
 export const crearPreferencia = async (req: Request, res: Response): Promise<void> => {
     try {
