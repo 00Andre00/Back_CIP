@@ -1,32 +1,63 @@
 import { Request, Response } from 'express'; // Importa los tipos de Request y Response de Express para tipado en TypeScript
 import jwt from 'jsonwebtoken'; // Importa JWT para la generación de tokens de autenticación
 import Usuario from '../models/Usuario'; // Importa el modelo de Usuario para interactuar con la base de datos
+import bcrypt from 'bcrypt'; // Importa bcrypt para el cifrado de contraseñas
 
 // Controlador para el inicio de sesión de administradores
-export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
+export const loginAdmin = async (req: Request, res: Response) => {
   const { email, password } = req.body; // Extrae el email y password del cuerpo de la solicitud
-
   try {
-    // Busca un usuario en la base de datos con el email proporcionado
-    const admin = await Usuario.findOne({ email });
-
-    // Verifica si el usuario existe, si la contraseña es correcta y si tiene permisos de administrador
-    if (!admin || !(await admin.verificarPassword(password)) || !admin.isAdmin) {
-      res.status(401).json({ message: 'Credenciales incorrectas o no es administrador' });
+    // Validación de campos
+    if (!email || !password) {
+      res.status(400).json({ message: 'Email y contraseña son requeridos' });
       return;
     }
 
-    // Si las credenciales son correctas, genera un token JWT con la información del usuario
+    // Busca el usuario en la base de datos
+    const usuario = await Usuario.findOne({ email }).select('+password');
+
+    if (!usuario) {
+      res.status(401).json({ message: 'Credenciales incorrectas' });
+      return;
+    }
+
+    // Verifica la contraseña
+    const passwordValido = await bcrypt.compare(password, usuario.password);
+    if (!passwordValido) {
+      res.status(401).json({ message: 'Credenciales incorrectas' });
+      return;
+    }
+
+    // Verifica si es administrador
+    if (!usuario.isAdmin) {
+      res.status(403).json({ message: 'Acceso no autorizado' });
+      return;
+    }
+
+    // Genera el token JWT
     const token = jwt.sign(
-      { id: admin._id, isAdmin: admin.isAdmin }, // Carga útil del token con el ID del usuario y el rol de administrador
-      process.env.JWT_SECRET as string, // Clave secreta para firmar el token (obtenida de las variables de entorno)
-      { expiresIn: '1d' } // Expiración del token en 1 día
+      { id: usuario._id, email: usuario.email, isAdmin: usuario.isAdmin },
+      process.env.JWT_SECRET || 'tuClaveSecretaPorDefecto',
+      { expiresIn: '24h' }
     );
 
-    // Responde con el token y el estado de administrador
-    res.status(200).json({ token, isAdmin: admin.isAdmin });
+    // Envía la respuesta
+    res.status(200).json({
+      success: true,
+      token,
+      isAdmin: usuario.isAdmin,
+      user: {
+        id: usuario._id,
+        email: usuario.email,
+        isAdmin: usuario.isAdmin,
+      },
+    });
   } catch (error) {
-    // Manejo de errores internos del servidor
-    res.status(500).json({ message: 'Error al iniciar sesión', error });
+    console.error('Error en login:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error : undefined,
+    });
   }
 };
