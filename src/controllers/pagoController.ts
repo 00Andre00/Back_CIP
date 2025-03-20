@@ -1,104 +1,78 @@
+// En un nuevo controlador: pagoController.ts
 import { Request, Response } from 'express';
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
-import Reserva from '../models/Reserva';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+import Afiliado from '../models/Afiliado';
 
 // Configurar MercadoPago con tu access token
-const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || 'APP_USR-a29d72dc-8d29-4015-8805-a13a13e12ea3';
+const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
 
 // Crear cliente de MercadoPago
 const client = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 const preferenceClient = new Preference(client);
-const paymentClient = new Payment(client);
 
-
-export const crearPreferencia = async (req: Request, res: Response): Promise<void> => {
-    try {
-        if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-            throw new Error('Access token no configurado');
-        }
-  
-        const { title, quantity, price, description, reservaData } = req.body;
-  
-        const body = {
-            items: [
-                {
-                    id: '1',
-                    title,
-                    quantity: Number(quantity),
-                    unit_price: Number(price),
-                    currency_id: "PEN",
-                    description
-                }
-            ],
-            back_urls: {
-              // Esta ruta va al backend para procesar el pago
-              success: `${process.env.BACKEND_URL || ''}/api/pagos/verificar`,
-              // Estas dos rutas van directamente al frontend, sin parámetros adicionales
-              failure: `${process.env.FRONTEND_URL || ''}/misas`,
-              pending: `${process.env.FRONTEND_URL || ''}/misas`
-            },
-            metadata: {
-                ...reservaData
-            },
-            auto_return: "approved"
-        };
-  
-        const preference = new Preference(client);
-        const result = await preference.create({ body });
-  
-        res.json({
-            id: result.id,
-            init_point: result.init_point
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({
-            error: "Error al crear la preferencia de pago"
-        });
+export const crearOrdenPago = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { afiliadoId, mesesAfiliacion, monto, correoConfirmacion, descripcion } = req.body;
+    
+    // Verificar que el afiliado exista
+    const afiliado = await Afiliado.findById(afiliadoId);
+    if (!afiliado) {
+      res.status(404).json({ success: false, mensaje: 'Afiliado no encontrado' });
+      return;
     }
-  };
-
-  export const verificarPago = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // Estos parámetros vienen en la URL de retorno de MercadoPago
-        const { payment_id, status, preference_id } = req.query;
-        
-        console.log('Verificando pago:', { payment_id, status, preference_id });
-        console.log('URL de frontend:', process.env.FRONTEND_URL);
-        
-        // Si el pago fue aprobado y tenemos el ID de preferencia
-        if (status === 'approved' && preference_id) {
-            // Buscar la reserva asociada a este pago
-            const reserva = await Reserva.findOne({ pagoId: preference_id });
-            
-            if (reserva) {
-                // Actualizar el estado de pago a "pagado"
-                await Reserva.findByIdAndUpdate(reserva._id, {
-                    estadoPago: 'pagado'
-                });
-                
-                // Usar una URL simple para la redirección, sin parámetros adicionales
-                const redirectUrl = `${process.env.FRONTEND_URL || 'https://parroquiasdigitales.com'}/misas`;
-                console.log('Redirigiendo a:', redirectUrl);
-                
-                // Opcionalmente, guardar el ID de reserva en una cookie para verificación en frontend
-                res.cookie('reservaCompletada', reserva._id, { 
-                    maxAge: 60000, // Cookie válida por 1 minuto
-                    httpOnly: false, // Permitir acceso desde JavaScript
-                    secure: process.env.NODE_ENV === 'production' // Solo HTTPS en producción
-                });
-                
-                res.redirect(redirectUrl);
-                return;
-            }
+    
+    // Crear preferencia de pago en MercadoPago
+    const body = {
+      items: [
+        {
+          id: '1',
+          title: descripcion,
+          unit_price: Number(monto),
+          quantity: 1,
+          currency_id: "PEN"
         }
-        
-        // Si algo falló o no encontramos la reserva
-        const errorUrl = `${process.env.FRONTEND_URL || 'https://parroquiasdigitales.com'}/misas`;
-        console.log('Redirigiendo a error:', errorUrl);
-        res.redirect(errorUrl);
-    } catch (error) {
-        console.error('Error al verificar pago:', error);
-        res.redirect(`${process.env.FRONTEND_URL || 'https://parroquiasdigitales.com'}/misas`);
-    }
+      ],
+      back_urls: {
+        success: `${process.env.FRONTEND_URL}/pago-exitoso`,
+        failure: `${process.env.FRONTEND_URL}/pago-fallido`,
+        pending: `${process.env.FRONTEND_URL}/pago-pendiente`
+      },
+      auto_return: 'approved',
+      external_reference: `${afiliadoId}-${mesesAfiliacion}-${Date.now()}`,
+      metadata: {
+        afiliadoId,
+        correoConfirmacion,
+        mesesAfiliacion
+      }
+    };
+    
+    const result = await preferenceClient.create({ body });
+    
+    res.status(200).json({
+      success: true,
+      init_point: result.init_point,
+      preferenceId: result.id
+    });
+  } catch (error) {
+    console.error('Error al crear orden de pago:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al procesar el pago',
+      error: (error as Error).message
+    });
+  }
+};
+
+// Si necesitas un método para verificar pagos similar al existente
+export const verificarPagoAfiliacion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Lógica para verificar pagos de afiliación
+    // Similar a tu verificarPago actual
+  } catch (error) {
+    console.error('Error al verificar pago de afiliación:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al verificar el pago'
+    });
+  }
 };

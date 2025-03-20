@@ -1,14 +1,9 @@
-import { crearPreferencia, verificarPago } from '../controllers/pagoController';
-import asyncHandler  from 'express-async-handler';
-
-import { handleWebhook } from '../controllers/webhookController';
+// En routes/pagoRoutes.ts
 import express from 'express';
+import { crearOrdenPago } from '../controllers/pagoController';
 
 const router = express.Router();
 
-// Rutas para pagos generales
-router.post('/create_preference', crearPreferencia);
-router.get('/verificar', verificarPago);
-router.post('/webhook', handleWebhook);
+router.post('/crear-orden', crearOrdenPago);
 
 export default router;

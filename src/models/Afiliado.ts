@@ -1,9 +1,4 @@
-// AfiliadoSchema.ts 
 import mongoose, { Schema, Document } from 'mongoose';
-import { customAlphabet } from 'nanoid';
-
-// Generador de código CIP
-const nanoid = customAlphabet('0123456789', 6);
 
 // Definición de la interfaz para el documento Afiliado
 export interface IAfiliadoDocument extends Document {
@@ -11,9 +6,13 @@ export interface IAfiliadoDocument extends Document {
   dni: string;
   correo: string;
   especialidad: string;
-  mensaje?: string;
-  codigoCip: string;
+  cipNumero: string; // Número de CIP
+  consejoDepartamental: string; // Consejo Departamental
   fechaRegistro: Date;
+  // Campos para gestión de meses
+  mesesAfiliacion: number;
+  mesInicio: Date;
+  estadoPago: string;
 }
 
 // Definición del esquema para el Afiliado
@@ -22,18 +21,13 @@ const AfiliadoSchema: Schema = new Schema({
   dni: { type: String, required: true, unique: true },
   correo: { type: String, required: true, unique: true },
   especialidad: { type: String, required: true },
-  mensaje: { type: String, default: '' },
-  codigoCip: { type: String, unique: true },
-  fechaRegistro: { type: Date, default: Date.now }
-});
-
-// Middleware pre-save para generar automáticamente el código CIP
-AfiliadoSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    // Generar código CIP: "cip" seguido de 6 dígitos aleatorios
-    this.codigoCip = `cip${nanoid()}`;
-  }
-  next();
+  cipNumero: { type: String, required: true },
+  consejoDepartamental: { type: String, required: true },
+  fechaRegistro: { type: Date, default: Date.now },
+  // Campos para gestión de meses
+  mesesAfiliacion: { type: Number, default: 0 },
+  mesInicio: { type: Date, default: null },
+  estadoPago: { type: String, enum: ['Pendiente', 'Al día', 'Atrasado'], default: 'Pendiente' }
 });
 
 // Exportamos el modelo

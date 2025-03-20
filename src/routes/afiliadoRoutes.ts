@@ -3,7 +3,9 @@ import {
   crearAfiliado, 
   obtenerAfiliados, 
   obtenerAfiliadoPorId,
-  verificarCodigoCip
+  actualizarInfoAfiliacion,
+  obtenerEstadoAfiliacion,
+  eliminarAfiliado
 } from '../controllers/afiliadoController';
 
 const router = express.Router();
@@ -11,7 +13,9 @@ const router = express.Router();
 // Rutas para afiliados
 router.post('/', crearAfiliado);
 router.get('/', obtenerAfiliados);
+router.get('/estado/:id', obtenerEstadoAfiliacion);
 router.get('/:id', obtenerAfiliadoPorId);
-router.get('/verificar/:codigoCip', verificarCodigoCip);
+router.put('/:id', actualizarInfoAfiliacion);
+router.delete('/:id', eliminarAfiliado);
 
 export default router;
