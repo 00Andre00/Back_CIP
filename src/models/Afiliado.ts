@@ -1,34 +1,43 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-// Definición de la interfaz para el documento Afiliado
 export interface IAfiliadoDocument extends Document {
   nombre: string;
   dni: string;
   correo: string;
   especialidad: string;
-  cipNumero: string; // Número de CIP
-  consejoDepartamental: string; // Consejo Departamental
-  fechaRegistro: Date;
-  // Campos para gestión de meses
-  mesesAfiliacion: number;
-  mesInicio: Date;
+  cipNumero: string;
+  consejoDepartamental: string;
   estadoPago: string;
+  mesesAdeudados: number;
+  ultimoMesPagado: Date | null;
 }
 
-// Definición del esquema para el Afiliado
-const AfiliadoSchema: Schema = new Schema({
+const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>({
   nombre: { type: String, required: true },
-  dni: { type: String, required: true, unique: true },
+  dni: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    validate: {
+      validator: function(v: string): boolean {
+        return /^\d{8}$/.test(v);
+      },
+      message: (props: { value: string }): string => `${props.value} no es un DNI válido. Debe tener 8 dígitos.`
+    }
+  },
   correo: { type: String, required: true, unique: true },
   especialidad: { type: String, required: true },
-  cipNumero: { type: String, required: true },
+  cipNumero: { 
+    type: String, 
+    required: true,
+    unique: true
+  },
   consejoDepartamental: { type: String, required: true },
-  fechaRegistro: { type: Date, default: Date.now },
-  // Campos para gestión de meses
-  mesesAfiliacion: { type: Number, default: 0 },
-  mesInicio: { type: Date, default: null },
-  estadoPago: { type: String, enum: ['Pendiente', 'Al día', 'Atrasado'], default: 'Pendiente' }
+  estadoPago: { type: String, default: 'Pendiente' },
+  mesesAdeudados: { type: Number, default: 0 },
+  ultimoMesPagado: { type: Date, default: null }
 });
 
-// Exportamos el modelo
-export default mongoose.model<IAfiliadoDocument>('Afiliado', AfiliadoSchema);
+const Afiliado = mongoose.model<IAfiliadoDocument>('Afiliado', afiliadoSchema);
+
+export default Afiliado;
