@@ -287,3 +287,48 @@ export const eliminarAfiliado = async (req: Request, res: Response): Promise<voi
     });
   }
 };
+
+// Obtener un afiliado por número CIP
+export const obtenerAfiliadoPorCIP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { cipNumero } = req.params;
+    
+    if (!cipNumero) {
+      res.status(400).json({
+        success: false,
+        mensaje: 'El número CIP es requerido'
+      });
+      return;
+    }
+    
+    const afiliado = await Afiliado.findOne({ cipNumero });
+    
+    if (!afiliado) {
+      res.status(404).json({
+        success: false,
+        mensaje: 'Afiliado no encontrado'
+      });
+      return;
+    }
+    
+    // Calcular estado y meses adeudados actualizados
+    const datos = calcularEstadoYMesesAdeudados(afiliado);
+    
+    res.status(200).json({
+      success: true,
+      mensaje: 'Afiliado obtenido correctamente',
+      data: {
+        ...afiliado.toObject(),
+        estadoPago: datos.estadoPago,
+        mesesAdeudados: datos.mesesAdeudados
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener afiliado por CIP:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al obtener el afiliado',
+      error: (error as Error).message
+    });
+  }
+};
