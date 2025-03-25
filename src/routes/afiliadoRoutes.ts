@@ -11,6 +11,24 @@ import {
 const router = express.Router();
 
 // Rutas para afiliados
+
+import {
+    crearPreferenciaAfiliado,
+    verificarPagoAfiliado,
+    obtenerEstadoPagoAfiliado
+} from '../controllers/pagoController';
+
+
+// Ruta para crear preferencia de pago para afiliados
+router.post('/create_preference', crearPreferenciaAfiliado);
+
+// Ruta para verificar pago de afiliados
+router.get('/verificar-pago', verificarPagoAfiliado);
+
+// Ruta para obtener estado de pago de un afiliado
+router.get('/:afiliadoId/estado-pago', obtenerEstadoPagoAfiliado);
+
+
 router.post('/', crearAfiliado);
 router.get('/', obtenerAfiliados);
 router.get('/cip/:cipNumero', obtenerAfiliadoPorCIP);
