@@ -7,6 +7,8 @@ export interface IPagoAfiliado extends Document {
     pagoId?: string;
     estado: 'pendiente' | 'pagado' | 'fallido';
     fechaCreacion: Date;
+    montoTotal: number;
+    fechaPago?: Date;
 }
 
 const PagoAfiliadoSchema: Schema = new Schema({
@@ -28,7 +30,7 @@ const PagoAfiliadoSchema: Schema = new Schema({
     },
     estado: {
         type: String,
-        enum: ['pendiente', 'pagado', 'fallido'],
+        enum: ['pendiente', 'pagado', 'fallido','reservado'],
         default: 'pendiente'
     },
     fechaCreacion: {

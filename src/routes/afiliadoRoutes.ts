@@ -15,19 +15,21 @@ const router = express.Router();
 import {
     crearPreferenciaAfiliado,
     verificarPagoAfiliado,
-    obtenerEstadoPagoAfiliado
+    obtenerEstadoPagoAfiliado,
+    webhookPagoAfiliado,
+    reservarPago
 } from '../controllers/pagoController';
 
 
 // Ruta para crear preferencia de pago para afiliados
 router.post('/create_preference', crearPreferenciaAfiliado);
-
 // Ruta para verificar pago de afiliados
 router.get('/verificar-pago', verificarPagoAfiliado);
-
 // Ruta para obtener estado de pago de un afiliado
 router.get('/:afiliadoId/estado-pago', obtenerEstadoPagoAfiliado);
-
+// In your routes file
+router.post('/webhook-pago', webhookPagoAfiliado);
+router.post('/reservar-pago', reservarPago);
 
 router.post('/', crearAfiliado);
 router.get('/', obtenerAfiliados);
