@@ -29,9 +29,7 @@ const app = express();
 // Configurar CORS
 // Configurar CORS de manera más flexible
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  '', // Agrega tu dominio de producción real
-  // Puedes agregar más dominios permitidos aquí
+  process.env.FRONTEND_URL || 'http://localhost:5173'
 ];
 
 app.use(cors({
@@ -77,11 +75,6 @@ app.use('/api/certificados', certificadoRoutes);
 // Agregar rutas de pagos
 app.use('/api/pagos', pagoRoutes);
 
-
-cron.schedule('*/5 * * * *', async () => {
-  console.log('Ejecutando limpieza de reservas pendientes...');
-  await limpiarReservasPendientes();
-});
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;

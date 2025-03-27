@@ -1,40 +1,43 @@
-// AfiliadoSchema.ts 
-import mongoose, { Schema, Document } from 'mongoose';
-import { customAlphabet } from 'nanoid';
+import mongoose, { Document, Schema } from 'mongoose';
 
-// Generador de código CIP
-const nanoid = customAlphabet('0123456789', 6);
-
-// Definición de la interfaz para el documento Afiliado
 export interface IAfiliadoDocument extends Document {
   nombre: string;
   dni: string;
   correo: string;
   especialidad: string;
-  mensaje?: string;
-  codigoCip: string;
-  fechaRegistro: Date;
+  cipNumero: string;
+  consejoDepartamental: string;
+  estadoPago: string;
+  mesesAdeudados: number;
+  ultimoMesPagado: Date | null;
 }
 
-// Definición del esquema para el Afiliado
-const AfiliadoSchema: Schema = new Schema({
+const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>({
   nombre: { type: String, required: true },
-  dni: { type: String, required: true, unique: true },
+  dni: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    validate: {
+      validator: function(v: string): boolean {
+        return /^\d{8}$/.test(v);
+      },
+      message: (props: { value: string }): string => `${props.value} no es un DNI válido. Debe tener 8 dígitos.`
+    }
+  },
   correo: { type: String, required: true, unique: true },
   especialidad: { type: String, required: true },
-  mensaje: { type: String, default: '' },
-  codigoCip: { type: String, unique: true },
-  fechaRegistro: { type: Date, default: Date.now }
+  cipNumero: { 
+    type: String, 
+    required: true,
+    unique: true
+  },
+  consejoDepartamental: { type: String, required: true },
+  estadoPago: { type: String, default: 'Pendiente' },
+  mesesAdeudados: { type: Number, default: 0 },
+  ultimoMesPagado: { type: Date, default: null }
 });
 
-// Middleware pre-save para generar automáticamente el código CIP
-AfiliadoSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    // Generar código CIP: "cip" seguido de 6 dígitos aleatorios
-    this.codigoCip = `cip${nanoid()}`;
-  }
-  next();
-});
+const Afiliado = mongoose.model<IAfiliadoDocument>('Afiliado', afiliadoSchema);
 
-// Exportamos el modelo
-export default mongoose.model<IAfiliadoDocument>('Afiliado', AfiliadoSchema);
+export default Afiliado;

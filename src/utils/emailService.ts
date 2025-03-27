@@ -47,42 +47,4 @@ export const enviarCorreoCertificado = async (
   return info;
 };
 
-//  Envía un correo electrónico al afiliado recién registrado con su código CIP
 
-export const enviarCorreoRegistro = async (
- correoDestino: string, 
- nombre: string, 
- codigoCip: string
-): Promise<void> => {
- try {
-   // Contenido del correo
-   const mailOptions = {
-     from: `"CIP Registro" <${process.env.EMAIL_USER}>`,
-     to: correoDestino,
-     subject: 'Registro exitoso en el CIP - Código de afiliado',
-     html: `
-       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-         <h2 style="color: #333; text-align: center;">¡Bienvenido al CIP!</h2>
-         <p>Estimado/a <strong>${nombre}</strong>,</p>
-         <p>Nos complace informarle que su registro en el Colegio de Ingenieros del Perú ha sido procesado exitosamente.</p>
-         <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
-           <p style="margin: 0; font-size: 14px;">Su código de afiliado es:</p>
-           <h3 style="margin: 10px 0; color: #c00; font-size: 24px;">${codigoCip}</h3>
-           <p style="margin: 0; font-size: 12px;">Guarde este código para futuras gestiones.</p>
-         </div>
-         <p>Este código es personal e intransferible. Le servirá para realizar trámites y acceder a servicios exclusivos para afiliados.</p>
-         <p>Si tiene alguna consulta, no dude en contactarnos respondiendo a este correo o llamando a nuestro centro de atención.</p>
-         <p style="margin-top: 30px;">Atentamente,</p>
-         <p><strong>Equipo de Registro CIP</strong></p>
-       </div>
-     `
-   };
-
-   // Enviar el correo
-   await transporter.sendMail(mailOptions);
-   console.log(`Correo enviado exitosamente a ${correoDestino}`);
- } catch (error) {
-   console.error('Error al enviar correo:', error);
-   throw new Error('Error al enviar el correo electrónico');
- }
-};
