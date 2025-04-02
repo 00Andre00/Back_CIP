@@ -3,19 +3,14 @@ import dotenv from 'dotenv';
 import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import bodyParser from 'body-parser';
-import reservaRoutes from './routes/reservaRoutes';
+
 import usuarioNormalRoutes from './routes/usuarioNormalRoutes';
-import certificadoRoutes from './routes/certificadoRoutes';
+
 import cors from 'cors'; // Importa cors
-import pagoRoutes from './routes/pagoRoutes';
-import cron from 'node-cron';
-import { limpiarReservasPendientes } from './controllers/reservaController';
+import pagoRoutes from './routes/pagoRoutes';  
 
 //Actuales
 import afiliadoRoutes from './routes/afiliadoRoutes';
-
-
-
 
 // Configurar variables de entorno
 dotenv.config();
@@ -29,7 +24,7 @@ const app = express();
 // Configurar CORS
 // Configurar CORS de manera más flexible
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173'
+  process.env.FRONTEND_URL || 'http://cipfront.maximocontigo.com/'
 ];
 
 app.use(cors({
@@ -69,9 +64,7 @@ app.use('/api/afiliados', afiliadoRoutes);
 
 //nteriores
 app.use('/api/auth', authRoutes);
-app.use('/api/reservas', reservaRoutes);
 app.use('/api/usuarios', usuarioNormalRoutes);
-app.use('/api/certificados', certificadoRoutes);
 // Agregar rutas de pagos
 app.use('/api/pagos', pagoRoutes);
 

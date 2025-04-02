@@ -3,7 +3,8 @@ import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import Afiliado from '../models/Afiliado';
 import PagoAfiliado from '../models/PagoAfiliado';
 import mongoose from 'mongoose';
-
+import dotenv from 'dotenv';
+dotenv.config();
 if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
     throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
 }
