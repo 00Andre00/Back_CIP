@@ -36,12 +36,21 @@ export const crearAfiliado = async (req: Request, res: Response): Promise<void> 
     const afiliadoExistente = await Afiliado.findOne({ $or: condiciones });
 
     if (afiliadoExistente) {
+      let campoDuplicado = '';
+      if (afiliadoExistente.dni === dni) campoDuplicado = 'DNI';
+      else if (afiliadoExistente.correo === correo) campoDuplicado = 'correo electrónico';
+      else if (afiliadoExistente.cipNumero === cipNumero) campoDuplicado = 'número CIP';
+    
+      console.log('🚨 Ya existe un afiliado duplicado:', afiliadoExistente); // 🔍 Log para debug
+    
       res.status(400).json({ 
         success: false, 
-        mensaje: 'Ya existe un afiliado con ese DNI, correo electrónico o número CIP' 
+        mensaje: `Ya existe un afiliado con ese ${campoDuplicado}` 
       });
       return;
     }
+    
+    
 
     const nuevoAfiliado = new Afiliado({
       nombre,
