@@ -3,11 +3,11 @@ import dotenv from 'dotenv';
 import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import bodyParser from 'body-parser';
-
 import usuarioNormalRoutes from './routes/usuarioNormalRoutes';
-
 import cors from 'cors'; // Importa cors
 import pagoRoutes from './routes/pagoRoutes';  
+import cron from 'node-cron';
+import { limpiarReservasPendientes } from './controllers/reservaController';
 
 //Actuales
 import afiliadoRoutes from './routes/afiliadoRoutes';
@@ -21,27 +21,16 @@ connectDB();
 // Inicializar la aplicación
 const app = express();
 
-// Configurar CORS
-// Configurar CORS de manera más flexible
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://cipfront.maximocontigo.com/'
-];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir solicitudes sin origen (como Postman, curl, o solicitudes del mismo origen)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log(`Origen bloqueado por CORS: ${origin}`);
-      const msg = 'La política CORS para este sitio no permite acceso desde el origen especificado.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://cipfront.maximocontigo.com',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  optionsSuccessStatus: 204,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Check']
+};
 
+app.use(cors(corsOptions)); // Habilitar CORS con las opciones definidas
 app.use(bodyParser.json());
 app.use(express.json());
 
@@ -62,12 +51,17 @@ app.get('/config', (req: Request, res: Response) => {
 //actuales
 app.use('/api/afiliados', afiliadoRoutes);
 
-//nteriores
+//anteriores
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuarioNormalRoutes);
-// Agregar rutas de pagos
 app.use('/api/pagos', pagoRoutes);
 
+
+
+// Tarea programada para limpiar reservas pendientes (del primer código)
+cron.schedule('*/5 * * * *', async () => {
+  await limpiarReservasPendientes();
+});
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
