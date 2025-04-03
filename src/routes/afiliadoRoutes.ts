@@ -1,11 +1,12 @@
 import express from 'express';
 import { 
   crearAfiliado, 
-  obtenerAfiliados, 
-  obtenerAfiliadoPorId,
-  obtenerAfiliadoPorCIP,
-  actualizarInfoAfiliacion,
-  eliminarAfiliado
+    obtenerAfiliados, 
+    obtenerAfiliadoPorId,
+    obtenerAfiliadoPorCIP,
+    actualizarInfoAfiliacion,
+    eliminarAfiliado,
+    verificarCipExistente
 } from '../controllers/afiliadoController';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ import {
     reservarPago
 } from '../controllers/pagoController';
 
+router.get('/check/:cip', verificarCipExistente);
 
 // Ruta para crear preferencia de pago para afiliados
 router.post('/create_preference', crearPreferenciaAfiliado);
