@@ -9,7 +9,7 @@ const crearAdmin = async () => {
   try {
     await connectDB();
 
-    const adminExistente = await Usuario.findOne({ email: 'admin@icp.com' });
+    const adminExistente = await Usuario.findOne({ email: 'admin@cip.com' });
     if (adminExistente) {
       console.log('El usuario admin ya existe');
       process.exit(0);
