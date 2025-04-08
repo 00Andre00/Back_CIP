@@ -5,7 +5,7 @@ export interface IPagoAfiliado extends Document {
     mesesPagados: Date[];
     preferenceId: string;
     pagoId?: string;
-    estado: 'pendiente' | 'pagado' | 'fallido';
+    estado: 'pendiente' | 'pagado' | 'fallido' | 'reservado';
     fechaCreacion: Date;
     montoTotal: number;
     fechaPago?: Date;
