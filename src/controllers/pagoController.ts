@@ -213,33 +213,65 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
             const payment = new Payment(client);
             const paymentDetails = await payment.get({ id: paymentId });
 
-            // Simplificado para usar solo "pendiente" y "pagado"
+            console.log('Detalles del pago:', {
+                id: paymentDetails.id,
+                status: paymentDetails.status,
+                preferenceId: paymentDetails.metadata?.preference_id
+            });
+
             if (paymentDetails.status === 'approved') {
                 const pagoPendiente = await PagoAfiliado.findOne({ 
                     preferenceId: paymentDetails.metadata.preference_id,
-                    estado: 'pendiente' // Solo buscamos pagos pendientes
+                    estado: 'pendiente'
                 });
 
                 if (pagoPendiente) {
+                    console.log('Pago pendiente encontrado:', {
+                        id: pagoPendiente._id,
+                        afiliadoId: pagoPendiente.afiliado,
+                        mesesPagados: pagoPendiente.mesesPagados
+                    });
+
                     // Actualizar estado de pago
                     pagoPendiente.estado = 'pagado';
                     pagoPendiente.pagoId = paymentId;
                     pagoPendiente.fechaPago = new Date();
                     await pagoPendiente.save();
+                    console.log('Pago actualizado a estado pagado');
+
+                    // Formatear fechas como objetos Date para garantizar el cálculo correcto
+                    const mesesPagadosComoFechas = pagoPendiente.mesesPagados.map(fecha => {
+                        if (fecha instanceof Date) return fecha;
+                        return new Date(fecha);
+                    });
 
                     // Obtener la fecha más reciente de los meses pagados
                     const fechaMasReciente = new Date(Math.max(
-                        ...pagoPendiente.mesesPagados.map(fecha => 
-                            fecha instanceof Date ? fecha.getTime() : new Date(fecha).getTime()
-                        )
+                        ...mesesPagadosComoFechas.map(fecha => fecha.getTime())
                     ));
 
+                    console.log('Fecha más reciente calculada:', fechaMasReciente);
+
                     // Actualizar estado del afiliado con la fecha más reciente
-                    await Afiliado.findByIdAndUpdate(pagoPendiente.afiliado, {
-                        estadoPago: 'Al día',
-                        ultimoMesPagado: fechaMasReciente
+                    const afiliadoActualizado = await Afiliado.findByIdAndUpdate(
+                        pagoPendiente.afiliado,
+                        {
+                            estadoPago: 'Al día',
+                            ultimoMesPagado: fechaMasReciente
+                        },
+                        { new: true } // Esta opción retorna el documento actualizado
+                    );
+
+                    console.log('Afiliado actualizado:', {
+                        id: afiliadoActualizado?._id,
+                        estadoPago: afiliadoActualizado?.estadoPago,
+                        ultimoMesPagado: afiliadoActualizado?.ultimoMesPagado
                     });
+                } else {
+                    console.log('No se encontró pago pendiente para la preferencia:', paymentDetails.metadata?.preference_id);
                 }
+            } else {
+                console.log('Pago no aprobado, status:', paymentDetails.status);
             }
         }
 
