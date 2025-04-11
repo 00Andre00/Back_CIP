@@ -201,6 +201,8 @@ export const obtenerEstadoPagoAfiliado = async (req: Request, res: Response): Pr
 };
 
 // Nuevo controlador para webhook de Mercado Pago
+// Modificación para el controlador webhookPagoAfiliado en el backend
+
 export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
     try {
         console.log('Webhook recibido:', req.body);
@@ -215,7 +217,7 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
             if (paymentDetails.status === 'approved') {
                 const pagoPendiente = await PagoAfiliado.findOne({ 
                     preferenceId: paymentDetails.metadata.preference_id,
-                    estado: 'pendiente' 
+                    estado: { $in: ['pendiente', 'reservado', 'en proceso'] }
                 });
 
                 if (pagoPendiente) {
@@ -225,10 +227,19 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
                     pagoPendiente.fechaPago = new Date();
                     await pagoPendiente.save();
 
-                    // Actualizar estado del afiliado
+                    // Obtener la fecha más reciente de los meses pagados
+                    const fechaMasReciente = new Date(Math.max(
+                        ...pagoPendiente.mesesPagados.map(fecha => 
+                            fecha instanceof Date ? fecha.getTime() : new Date(fecha).getTime()
+                        )
+                    ));
+
+                    console.log('Actualizando ultimoMesPagado a:', fechaMasReciente);
+
+                    // Actualizar estado del afiliado con la fecha más reciente
                     await Afiliado.findByIdAndUpdate(pagoPendiente.afiliado, {
                         estadoPago: 'Al día',
-                        ultimoMesPagado: new Date()
+                        ultimoMesPagado: fechaMasReciente
                     });
                 }
             }
