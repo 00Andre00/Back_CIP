@@ -138,7 +138,7 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
             // Resto del código igual...
             
             // Construir URL de redirección
-            const redirectUrl = `${process.env.FRONTEND_URL}/afiliados?status=success`;
+            const redirectUrl = `${process.env.FRONTEND_URL}/sistema`;
 
             // Agrega logs adicionales para seguimiento
             console.log('Pago verificado con éxito, redirigiendo a:', redirectUrl);
@@ -213,11 +213,11 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
             const payment = new Payment(client);
             const paymentDetails = await payment.get({ id: paymentId });
 
-            // Lógica para manejar diferentes estados de pago
+            // Simplificado para usar solo "pendiente" y "pagado"
             if (paymentDetails.status === 'approved') {
                 const pagoPendiente = await PagoAfiliado.findOne({ 
                     preferenceId: paymentDetails.metadata.preference_id,
-                    estado: { $in: ['pendiente', 'reservado', 'en proceso'] }
+                    estado: 'pendiente' // Solo buscamos pagos pendientes
                 });
 
                 if (pagoPendiente) {
@@ -233,8 +233,6 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
                             fecha instanceof Date ? fecha.getTime() : new Date(fecha).getTime()
                         )
                     ));
-
-                    console.log('Actualizando ultimoMesPagado a:', fechaMasReciente);
 
                     // Actualizar estado del afiliado con la fecha más reciente
                     await Afiliado.findByIdAndUpdate(pagoPendiente.afiliado, {
@@ -270,28 +268,25 @@ export const reservarPago = async (req: Request, res: Response): Promise<void> =
         });
 
         if (pagoPendiente) {
-            // Actualizar el pago existente
-            pagoPendiente.estado = 'reservado';
-            await pagoPendiente.save();
-            
+            // El pago ya existe, solo retornamos OK
             res.status(200).json({ 
-                message: 'Estado de pago actualizado',
+                message: 'Pago pendiente confirmado',
                 reservaId: pagoPendiente._id 
             });
         } else {
-            // Si no existe, crear uno nuevo (situación menos común)
-            const reservaPago = new PagoAfiliado({
+            // Si no existe, crear uno nuevo
+            const nuevoPago = new PagoAfiliado({
                 afiliado: afiliadoId,
                 mesesPagados: mesesPagadosFormateados,
                 preferenceId: pagoId,
-                estado: 'en proceso',
+                estado: 'pendiente',
                 montoTotal: mesesPagadosFormateados.length * 20
             });
-            await reservaPago.save();
+            await nuevoPago.save();
             
             res.status(200).json({ 
-                message: 'Pago reservado exitosamente',
-                reservaId: reservaPago._id 
+                message: 'Pago registrado exitosamente',
+                reservaId: nuevoPago._id 
             });
         }
 
