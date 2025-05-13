@@ -6,15 +6,14 @@ import { Schema, model, Document, Types } from 'mongoose';
  * - Bautizo
  * - Confirmación
  * - Matrimonio
+ * - Habilidad (para ingenieros)
  */
 export interface ICertificado extends Document {
   // Datos generales
-  tipo: 'bautizo' | 'confirmacion' | 'matrimonio';
+  tipo: 'bautizo' | 'confirmacion' | 'matrimonio' | 'habilidad';
   fechaEmision: Date;
   detallesAdicionales?: string;
   dni?: string;
-  padrinos?: string;
-  oficiante?: string;
   pagado: boolean;
   fechaPago?: Date;
   fechaCompra?: Date;
@@ -22,7 +21,6 @@ export interface ICertificado extends Document {
   estadoPago?: 'pendiente' | 'pagado' | 'rechazado';
   _id: Types.ObjectId;
   
-
   // Datos específicos para Bautismo
   padre?: string;
   madre?: string;
@@ -31,10 +29,12 @@ export interface ICertificado extends Document {
   departamento?: string;
   fechaNacimiento?: Date;
   fechaBautismo?: Date;
+  padrinos?: string;
+  oficiante?: string;
   
-  // Para Confirmación se reutilizan: oficiante y padrinos, y se usa fechaEmision como fecha de confirmación
-  // (El campo "nombreConfirmado" fue eliminado)
-
+  // Datos específicos para Confirmación
+  // (reutiliza oficiante y padrinos)
+  
   // Datos específicos para Matrimonio
   esposo?: string;
   esposa?: string;
@@ -46,10 +46,21 @@ export interface ICertificado extends Document {
   mamaEsposa?: string;
   fechaMatrimonio?: Date;
   testigos?: string;
+  
+  // Datos específicos para Certificado de Habilidad (Ingenieros)
+  registroCIP?: string;
+  fechaIncorporacion?: Date;
+  consejoDepartamental?: string;
+  especialidad?: string;
+  fechaVigencia?: Date;
 }
 
 const certificadoSchema = new Schema<ICertificado>({
-  tipo: { type: String, required: true, enum: ['bautizo', 'confirmacion', 'matrimonio'] },
+  tipo: { 
+    type: String, 
+    required: true, 
+    enum: ['bautizo', 'confirmacion', 'matrimonio', 'habilidad'] 
+  },
   fechaEmision: { type: Date, default: Date.now },
   detallesAdicionales: { type: String },
   dni: { type: String },
@@ -57,12 +68,12 @@ const certificadoSchema = new Schema<ICertificado>({
   fechaPago: { type: Date },
   fechaCompra: { type: Date },
   pagoId: { type: String },
-  estadoPago: { type: String, enum: ['pendiente', 'pagado', 'rechazado'], default: 'pendiente' },
+  estadoPago: { 
+    type: String, 
+    enum: ['pendiente', 'pagado', 'rechazado'], 
+    default: 'pendiente' 
+  },
   
-  // Datos generales
-  padrinos: { type: String },
-  oficiante: { type: String },
-
   // Datos para Bautismo
   padre: { type: String },
   madre: { type: String },
@@ -71,9 +82,8 @@ const certificadoSchema = new Schema<ICertificado>({
   departamento: { type: String },
   fechaNacimiento: { type: Date },
   fechaBautismo: { type: Date },
-
-  // Confirmación
-  // (El campo "nombreConfirmado" fue eliminado)
+  padrinos: { type: String },
+  oficiante: { type: String },
 
   // Datos para Matrimonio
   esposo: { type: String },
@@ -85,7 +95,24 @@ const certificadoSchema = new Schema<ICertificado>({
   papaEsposa: { type: String },
   mamaEsposa: { type: String },
   fechaMatrimonio: { type: Date },
-  testigos: { type: String }
+  testigos: { type: String },
+  
+  // Datos para Certificado de Habilidad
+  registroCIP: { type: String },
+  fechaIncorporacion: { type: Date },
+  consejoDepartamental: { type: String },
+  especialidad: { type: String },
+  fechaVigencia: { type: Date }
 });
+
+// Creamos la interfaz específica para ingenieros
+export interface IIngeniero {
+  nombre: string;
+  apellido: string;
+  registroCIP: string;
+  fechaIncorporacion: Date;
+  consejoDepartamental: string;
+  especialidad: string;
+}
 
 export default model<ICertificado>('Certificado', certificadoSchema);
