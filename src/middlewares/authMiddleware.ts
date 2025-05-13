@@ -14,6 +14,22 @@ interface IPayload {
   exp?: number;
 }
 
+interface DecodedToken {
+  id: string;
+  isAdmin: boolean;
+  iat?: number;
+  exp?: number;
+}
+
+// Extender el tipo Request de Express para incluir el usuario
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: DecodedToken;
+    }
+  }
+}
+
 export const authMiddleware = (req: RequestWithUser, res: Response, next: NextFunction): void => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -66,4 +82,61 @@ export const checkTokenExpiration = (req: RequestWithUser, res: Response, next: 
   }
   
   next();
+};
+
+// Middleware para verificar autenticación
+export const verificarAuth = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      res.status(401).json({
+        success: false,
+        mensaje: 'Acceso denegado. Token no proporcionado'
+      });
+      return;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as DecodedToken;
+    
+    // Añadir el usuario al request
+    req.usuario = decoded;
+    
+    next();
+  } catch (error) {
+    console.error('Error en verificación de token:', error);
+    res.status(401).json({
+      success: false,
+      mensaje: 'Token inválido o expirado'
+    });
+  }
+};
+
+// Middleware para verificar si es admin
+export const verificarAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    if (!req.usuario) {
+      res.status(401).json({
+        success: false,
+        mensaje: 'Acceso denegado'
+      });
+      return;
+    }
+
+    if (!req.usuario.isAdmin) {
+      res.status(403).json({
+        success: false,
+        mensaje: 'Acceso denegado. Se requieren privilegios de administrador'
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Error en verificación de admin:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error en la verificación de permisos'
+    });
+  }
 };

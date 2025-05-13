@@ -9,6 +9,8 @@ import pagoRoutes from './routes/pagoRoutes';
 import cron from 'node-cron';
 import { limpiarReservasPendientes } from './controllers/reservaController';
 
+import certificadoRoutes from './routes/certificadoRoutes';
+
 //Actuales
 import afiliadoRoutes from './routes/afiliadoRoutes';
 
@@ -57,6 +59,7 @@ app.use('/api/usuarios', usuarioNormalRoutes);
 app.use('/api/pagos', pagoRoutes);
 
 
+app.use('/api/certificados', certificadoRoutes);
 
 // Tarea programada para limpiar reservas pendientes (del primer código)
 cron.schedule('*/5 * * * *', async () => {

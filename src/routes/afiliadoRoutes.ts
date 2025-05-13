@@ -11,8 +11,6 @@ import {
 
 const router = express.Router();
 
-// Rutas para afiliados
-
 import {
     crearPreferenciaAfiliado,
     verificarPagoAfiliado,
