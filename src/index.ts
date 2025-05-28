@@ -25,7 +25,7 @@ const app = express();
 
 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://cipfront.maximocontigo.com',
+  origin: process.env.FRONTEND_URL || 'http://cip.sistemasudh.com',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204,
@@ -67,7 +67,7 @@ cron.schedule('*/5 * * * *', async () => {
 });
 
 // Iniciar el servidor
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3007;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
