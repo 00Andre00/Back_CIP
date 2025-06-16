@@ -7,6 +7,7 @@ export interface IAfiliadoDocument extends Document {
   especialidad: string;
   cipNumero: string;
   consejoDepartamental: string;
+  fechaInicioPago: Date; // NUEVO CAMPO
   estadoPago: string;
   mesesAdeudados: number;
   ultimoMesPagado: Date | null;
@@ -31,6 +32,7 @@ const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>(
     required: true,
   },
   consejoDepartamental: { type: String, required: true },
+  fechaInicioPago: { type: Date, required: true }, // NUEVO CAMPO
   estadoPago: { type: String, default: 'Pendiente' },
   mesesAdeudados: { type: Number, default: 0 },
   ultimoMesPagado: { type: Date, default: null }

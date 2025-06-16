@@ -9,7 +9,6 @@ export const verificarCipExistente = async (req: Request, res: Response) => {
     const afiliado = await Afiliado.findOne({ cipNumero: cip });
     const exists = !!afiliado;
 
-    // Siempre devolver 200 con el estado exists
     res.status(200).json({
       exists,
       mensaje: exists ? 'El número CIP ya está registrado' : 'Número CIP disponible'
@@ -27,22 +26,10 @@ export const verificarCipExistente = async (req: Request, res: Response) => {
 // Crear un nuevo afiliado
 export const crearAfiliado = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nombre, dni, correo, especialidad, cipNumero, consejoDepartamental } = req.body;
+    const { nombre, dni, correo, especialidad, cipNumero, consejoDepartamental, fechaInicioPago } = req.body;
     console.log('Backend - Intentando crear afiliado con CIP:', cipNumero);
 
-    // Verificación previa
-    const afiliadoExistente = await Afiliado.findOne({ cipNumero });
-
-    if (afiliadoExistente) {
-      console.log('Backend - CIP ya existe en BD');
-      res.status(400).json({
-        success: false,
-        mensaje: `Ya existe un afiliado con el número CIP ${cipNumero}`
-      });
-      return;
-    }
-
-    // Verificar cada campo individualmente para dar mensajes más específicos
+    // Verificaciones de duplicados
     const existeDNI = await Afiliado.findOne({ dni });
     if (existeDNI) {
       res.status(400).json({
@@ -70,7 +57,7 @@ export const crearAfiliado = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Crear nuevo afiliado
+    // Crear nuevo afiliado CON fechaInicioPago
     const nuevoAfiliado = new Afiliado({
       nombre,
       dni,
@@ -78,10 +65,17 @@ export const crearAfiliado = async (req: Request, res: Response): Promise<void> 
       especialidad,
       cipNumero,
       consejoDepartamental,
+      fechaInicioPago: new Date(fechaInicioPago), // GUARDAR fechaInicioPago
       estadoPago: 'Pendiente',
       mesesAdeudados: 0,
       ultimoMesPagado: null
     });
+
+    // Calcular estado inicial y meses adeudados basado en fechaInicioPago
+    const datosCalculados = calcularEstadoYMesesAdeudados(nuevoAfiliado);
+    nuevoAfiliado.estadoPago = datosCalculados.estadoPago;
+    nuevoAfiliado.mesesAdeudados = datosCalculados.mesesAdeudados;
+
     await nuevoAfiliado.save();
 
     res.status(201).json({
@@ -92,7 +86,6 @@ export const crearAfiliado = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Error al crear afiliado:', error);
 
-    // Manejo de errores más específico
     if (error instanceof Error) {
       if ('code' in error && (error as any).code === 11000) {
         const campo = Object.keys((error as any).keyPattern)[0];
@@ -115,7 +108,6 @@ export const crearAfiliado = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
-
 
 // Obtener todos los afiliados
 export const obtenerAfiliados = async (req: Request, res: Response): Promise<void> => {
@@ -185,7 +177,6 @@ export const obtenerAfiliadoPorId = async (req: Request, res: Response): Promise
 };
 
 // Calcular meses entre dos fechas
-// Función para calcular meses entre dos fechas (sin cambios)
 const calcularMesesEntreFechas = (fechaInicio: Date, fechaFin: Date = new Date()): number => {
   let meses = (fechaFin.getFullYear() - fechaInicio.getFullYear()) * 12;
   meses += fechaFin.getMonth() - fechaInicio.getMonth();
@@ -198,30 +189,41 @@ const calcularMesesEntreFechas = (fechaInicio: Date, fechaFin: Date = new Date()
   return Math.max(0, meses); // Asegurar que no sea negativo
 };
 
-// Función para calcular el estado de pago y meses adeudados
-// Función modificada para calcular el estado de pago y meses adeudados
+// FUNCIÓN ACTUALIZADA para calcular el estado de pago y meses adeudados
 const calcularEstadoYMesesAdeudados = (afiliado: IAfiliadoDocument): { estadoPago: string, mesesAdeudados: number } => {
   const fechaActual = new Date();
 
-  // Si no hay último mes pagado, está pendiente y no tiene meses adeudados (nuevo afiliado)
-  if (!afiliado.ultimoMesPagado) {
-    return { estadoPago: 'Pendiente', mesesAdeudados: 0 };
+  // Si tiene último mes pagado, calcular desde ahí
+  if (afiliado.ultimoMesPagado) {
+    const ultimoMesPagado = new Date(afiliado.ultimoMesPagado);
+    
+    // Calcular meses adeudados desde el mes siguiente al último pago
+    const mesesAdeudados = calcularMesesEntreFechas(
+      new Date(ultimoMesPagado.getFullYear(), ultimoMesPagado.getMonth() + 1, 1),
+      fechaActual
+    );
+
+    return {
+      estadoPago: mesesAdeudados === 0 ? 'Al día' : 'Pendiente',
+      mesesAdeudados: mesesAdeudados
+    };
   }
 
-  // Crear una copia del último mes pagado para comparación
-  const ultimoMesPagado = new Date(afiliado.ultimoMesPagado);
+  // Si NO tiene último mes pagado, calcular desde fechaInicioPago
+  if (afiliado.fechaInicioPago) {
+    const fechaInicio = new Date(afiliado.fechaInicioPago);
+    
+    // Calcular meses adeudados desde la fecha de inicio de pago
+    const mesesAdeudados = calcularMesesEntreFechas(fechaInicio, fechaActual);
 
-  // Calculamos meses adeudados desde el último mes pagado hasta hoy
-  const mesesAdeudados = calcularMesesEntreFechas(
-    new Date(ultimoMesPagado.getFullYear(), ultimoMesPagado.getMonth() + 1, 1), // Mes siguiente al último pago
-    fechaActual
-  );
+    return {
+      estadoPago: mesesAdeudados === 0 ? 'Al día' : 'Pendiente',
+      mesesAdeudados: mesesAdeudados
+    };
+  }
 
-  // Si mesesAdeudados es 0, está al día; de lo contrario, está pendiente
-  return {
-    estadoPago: mesesAdeudados === 0 ? 'Al día' : 'Pendiente',
-    mesesAdeudados: mesesAdeudados
-  };
+  // Caso por defecto (no debería llegar aquí con el nuevo modelo)
+  return { estadoPago: 'Pendiente', mesesAdeudados: 0 };
 };
 
 // Actualizar información de afiliación
@@ -247,31 +249,17 @@ export const actualizarInfoAfiliacion = async (req: Request, res: Response): Pro
       afiliado.ultimoMesPagado = null;
     }
 
-    // Calcular meses adeudados
-    if (afiliado.ultimoMesPagado) {
-      const ultimoMes = new Date(afiliado.ultimoMesPagado);
-      const fechaActual = new Date();
-
-      // Calcular meses adeudados
-      const mesesAdeudados = calcularMesesEntreFechas(
-        new Date(ultimoMes.getFullYear(), ultimoMes.getMonth() + 1, 1),
-        fechaActual
-      );
-
-      afiliado.mesesAdeudados = mesesAdeudados;
-      // Estado basado únicamente en meses adeudados
-      afiliado.estadoPago = mesesAdeudados === 0 ? 'Al día' : 'Pendiente';
-    } else {
-      afiliado.mesesAdeudados = 0;
-      afiliado.estadoPago = 'Pendiente';
-    }
+    // Recalcular estado y meses adeudados
+    const datosCalculados = calcularEstadoYMesesAdeudados(afiliado);
+    afiliado.estadoPago = datosCalculados.estadoPago;
+    afiliado.mesesAdeudados = datosCalculados.mesesAdeudados;
 
     // Guardar cambios
     const afiliadoActualizado = await afiliado.save();
 
     res.status(200).json({
       success: true,
-
+      mensaje: 'Información de afiliación actualizada correctamente',
       data: afiliadoActualizado
     });
   } catch (error) {
@@ -358,4 +346,3 @@ export const obtenerAfiliadoPorCIP = async (req: Request, res: Response): Promis
     });
   }
 };
-
