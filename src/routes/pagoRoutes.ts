@@ -2,18 +2,18 @@ import express from 'express';
 import {
     crearPreferenciaAfiliado,
     verificarPagoAfiliado,
+    webhookPagoAfiliado,
+    reservarPago,
     obtenerEstadoPagoAfiliado
-} from '../controllers/pagoController';
+  } from '../controllers/pagoController'; // Asumiendo que separaste el controlador de pagos
+  // === RUTAS DE PAGOS MERCADOPAGO ===
 
-const router = express.Router();
+  const router = express.Router();
 
-// Ruta para crear preferencia de pago para afiliados
 router.post('/create_preference', crearPreferenciaAfiliado);
-
-// Ruta para verificar pago de afiliados
 router.get('/verificar-pago', verificarPagoAfiliado);
-
-// Ruta para obtener estado de pago de un afiliado
-router.get('/:afiliadoId/estado-pago', obtenerEstadoPagoAfiliado);
+router.post('/webhook-pago', webhookPagoAfiliado);
+router.post('/reservar-pago', reservarPago);
+router.get('/estado-pago/:afiliadoId', obtenerEstadoPagoAfiliado);
 
 export default router;
