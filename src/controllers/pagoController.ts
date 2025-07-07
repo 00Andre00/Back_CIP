@@ -138,7 +138,7 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
             // Resto del código igual...
             
             // Construir URL de redirección
-            const redirectUrl = `${process.env.FRONTEND_URL}/sistema`;
+            const redirectUrl = `${process.env.FRONTEND_URL}`;
 
             // Agrega logs adicionales para seguimiento
             console.log('Pago verificado con éxito, redirigiendo a:', redirectUrl);
