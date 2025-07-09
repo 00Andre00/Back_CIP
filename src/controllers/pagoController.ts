@@ -1,3 +1,4 @@
+// nombre del archivo : pagoController.ts
 import { Request, Response } from 'express';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import Afiliado from '../models/Afiliado';

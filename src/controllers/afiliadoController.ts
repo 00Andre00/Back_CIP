@@ -1,3 +1,4 @@
+// nombre del archivo : afiliadoController.ts
 import { Request, Response } from 'express';
 import Afiliado, { IAfiliadoDocument } from '../models/Afiliado';
 

@@ -1,4 +1,6 @@
+// nombre del archivo : afiliado.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { arch } from 'os';
 
 export interface IAfiliadoDocument extends Document {
   nombre: string;

@@ -1,3 +1,4 @@
+// nombre de archivo index.ts
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db';
@@ -61,10 +62,6 @@ app.use('/api/pagos', pagoRoutes);
 
 app.use('/api/certificados', certificadoRoutes);
 
-// Tarea programada para limpiar reservas pendientes (del primer código)
-cron.schedule('*/5 * * * *', async () => {
-  await limpiarReservasPendientes();
-});
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3007;

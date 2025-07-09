@@ -1,3 +1,4 @@
+// nombre de archivo : PagoAfiliado.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPagoAfiliado extends Document {

@@ -1,9 +1,11 @@
+// nombre de archivo : pagoRoutes.ts
 import express from 'express';
 import {
     crearPreferenciaAfiliado,
     verificarPagoAfiliado,
     obtenerEstadoPagoAfiliado
 } from '../controllers/pagoController';
+import { arch } from 'os';
 
 const router = express.Router();
 
