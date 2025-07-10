@@ -106,8 +106,8 @@ const agregarEncabezado = (doc: PDFDoc) => {
   doc.font('Helvetica-Bold')
     .fontSize(14)
     .fillColor('black')
-    .text('Certificado de Habilida', { width: textBlockWidth, align: 'left', lineGap: 2 });
-  
+    .text('Certificado de Habilidad', { width: textBlockWidth, align: 'left', lineGap: 2 });
+
   const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
   doc.moveTo(leftMargin, lineY)
     .lineTo(pageWidth - rightMargin, lineY)
@@ -135,7 +135,7 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   const nombreCompleto = `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase();
   const textoDescriptivo = 'El Ingeniero (a): ';
-  const initialX = doc.page.margins.left + 20;  // Alineación más a la izquierda
+  const initialX = doc.page.margins.left + 20;  
 
   doc.font('Helvetica')
     .fontSize(11)
@@ -150,7 +150,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const consejo = ingeniero.consejoDepartamental.toUpperCase();
   const textoConsejo = 'Adscrito al Consejo Departamental de: ';
-  const consejoX = doc.page.margins.left + 20;  // Alineación más a la izquierda
+  const consejoX = doc.page.margins.left + 20;  
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -164,7 +164,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const registro = ingeniero.registroCIP;
   const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
-  const registroX = doc.page.margins.left + 20;  // Alineación más a la izquierda
+  const registroX = doc.page.margins.left + 20;  
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -178,7 +178,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
   const textoFecha = 'Fecha de Incorporación: ';
-  const fechaX = doc.page.margins.left + 20;  // Alineación más a la izquierda
+  const fechaX = doc.page.margins.left + 20;  
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -192,7 +192,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const especialidad = ingeniero.especialidad.toUpperCase();
   const textoEspecialidad = 'Especialidad: ';
-  const especialidadX = doc.page.margins.left + 20;  // Alineación más a la izquierda
+  const especialidadX = doc.page.margins.left + 20;  
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -266,9 +266,6 @@ const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
     });
 };
 
-
-
-
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
   fechaVigencia: Date,
@@ -284,6 +281,4 @@ export const generarPDFCertificadoHabilidad = async (
     agregarVigencia(doc, fechaVigencia);
     await agregarPieCertificado(doc, certificadoId);
   });
-
 };
-
