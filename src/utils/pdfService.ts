@@ -83,7 +83,7 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const gap = 2;
   const textBlockWidth = 300;
   const totalWidth = logoWidth + gap + textBlockWidth;
-  const startX = (pageWidth - totalWidth) / 2;
+  const startX = leftMargin;  // Cambiar la posición del logo y texto para alinearlos a la izquierda.
 
   const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo.png');
   if (fs.existsSync(logoPath)) {
@@ -102,15 +102,15 @@ const agregarEncabezado = (doc: PDFDoc) => {
   doc.font('Helvetica-Bold')
     .fontSize(20)
     .fillColor('black')
-    .text('DIÓCESIS DE HUÁNUCO', textX, textY, { width: textBlockWidth, align: 'center', lineGap: 2 });
+    .text('DIÓCESIS DE HUÁNUCO', textX, textY, { width: textBlockWidth, align: 'left', lineGap: 2 });
   doc.font('Helvetica-Bold')
     .fontSize(14)
     .fillColor('black')
-    .text('PARTIDA DE MATRIMONIO', { width: textBlockWidth, align: 'center', lineGap: 2 });
+    .text('PARTIDA DE MATRIMONIO', { width: textBlockWidth, align: 'left', lineGap: 2 });
   doc.font('Helvetica-Bold')
     .fontSize(14)
     .fillColor('black')
-    .text('Huánuco - Perú', { width: textBlockWidth, align: 'center', lineGap: 4 });
+    .text('Huánuco - Perú', { width: textBlockWidth, align: 'left', lineGap: 4 });
 
   const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
   doc.moveTo(leftMargin, lineY)
@@ -132,14 +132,14 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
   doc.font('Helvetica-Bold')
     .fontSize(14)
     .fillColor('black')
-    .text(titulo, leftMargin, doc.y, { align: 'center', width: availableWidth, lineGap: 4 });
+    .text(titulo, leftMargin, doc.y, { align: 'left', width: availableWidth, lineGap: 4 });
   doc.moveDown(1);
 };
 
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   const nombreCompleto = `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase();
   const textoDescriptivo = 'El Ingeniero (a): ';
-  const initialX = (doc.page.width - doc.widthOfString(textoDescriptivo + nombreCompleto)) / 2;
+  const initialX = doc.page.margins.left + 20;  // Alineación más a la izquierda
 
   doc.font('Helvetica')
     .fontSize(11)
@@ -154,7 +154,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const consejo = ingeniero.consejoDepartamental.toUpperCase();
   const textoConsejo = 'Adscrito al Consejo Departamental de: ';
-  const consejoX = (doc.page.width - doc.widthOfString(textoConsejo + consejo)) / 2;
+  const consejoX = doc.page.margins.left + 20;  // Alineación más a la izquierda
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -168,7 +168,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const registro = ingeniero.registroCIP;
   const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
-  const registroX = (doc.page.width - doc.widthOfString(textoRegistro + registro)) / 2;
+  const registroX = doc.page.margins.left + 20;  // Alineación más a la izquierda
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -182,7 +182,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
   const textoFecha = 'Fecha de Incorporación: ';
-  const fechaX = (doc.page.width - doc.widthOfString(textoFecha + fechaInc)) / 2;
+  const fechaX = doc.page.margins.left + 20;  // Alineación más a la izquierda
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -196,7 +196,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const especialidad = ingeniero.especialidad.toUpperCase();
   const textoEspecialidad = 'Especialidad: ';
-  const especialidadX = (doc.page.width - doc.widthOfString(textoEspecialidad + especialidad)) / 2;
+  const especialidadX = doc.page.margins.left + 20;  // Alineación más a la izquierda
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -234,6 +234,43 @@ const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
     .text('Sello de la Parroquia', doc.page.width - doc.page.margins.right - 140, sealY + 60, { width: 150, align: 'center' });
 };
 
+const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
+      align: 'left',
+      lineGap: 15
+    });
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('ASUNTO', {
+      align: 'left',
+      lineGap: 5
+    });
+};
+
+const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text(`DÍA ${fechaVigencia.getDate().toString().padStart(2, '0')}`, {
+      align: 'left',
+      lineGap: 5
+    });
+};
+
+
+
 
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
@@ -252,39 +289,4 @@ export const generarPDFCertificadoHabilidad = async (
   });
 
 };
-const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
-      align: 'left',
-      lineGap: 15
-    });
-  doc.font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor('black')
-    .text('ASUNTO', {
-      align: 'left',
-      lineGap: 5
-    });
-  
-  // Continúa definiendo más contenido
-};
 
-const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
-  doc.font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor('black')
-    .text('EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:', {
-      align: 'left',
-      lineGap: 10
-    });
-
-  doc.font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor('black')
-        .text(`DÍA ${fechaVigencia.getDate().toString().padStart(2, '0')}`, {
-          align: 'left',
-          lineGap: 5
-        });
-    }
