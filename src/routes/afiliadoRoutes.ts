@@ -1,4 +1,3 @@
-// nombre del archivo : afiliadoRoutes.ts
 import express from 'express';
 import { 
   crearAfiliado, 
@@ -19,7 +18,6 @@ import {
     webhookPagoAfiliado,
     reservarPago
 } from '../controllers/pagoController';
-import { arch } from 'os';
 
 router.get('/check/:cip', verificarCipExistente);
 

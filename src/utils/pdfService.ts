@@ -1,3 +1,4 @@
+// nombre de archivo: pdfService.ts
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';

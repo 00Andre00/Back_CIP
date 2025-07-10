@@ -1,8 +1,10 @@
+// nombre de archivo : emailService.ts
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import { generarPDFCertificadoHabilidad  } from './pdfService';
 import fs from 'fs';
 import { IIngeniero } from '../models/Certificado';
+import { arch } from 'os';
 
 dotenv.config();
 

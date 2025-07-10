@@ -5,6 +5,7 @@ import Afiliado from '../models/Afiliado';
 import PagoAfiliado from '../models/PagoAfiliado';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { enviarCorreoCertificadoHabilidad } from '../utils/emailService'; 
 dotenv.config();
 if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
     throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
@@ -123,51 +124,55 @@ export const crearPreferenciaAfiliado = async (req: Request, res: Response): Pro
 };
 
 export const verificarPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  try {
+    const { payment_id, status, preference_id } = req.query;
 
-    try {
-        const { payment_id, status, preference_id } = req.query;
-        
-        console.log('Verificando pago de afiliado:', { payment_id, status, preference_id });
+    if (status === 'approved' && preference_id) {
+      const pagoPendiente = await PagoAfiliado.findOne({ preferenceId: preference_id });
 
-        if (!payment_id || !status || !preference_id) {
-            throw new Error('Parámetros incompletos');
+      if (pagoPendiente) {
+        // Verificar si pagoId ya existe antes de actualizar
+        if (!pagoPendiente.pagoId) {
+          pagoPendiente.pagoId = payment_id as string;  // Asignar pagoId si no existe
         }
 
-        if (status === 'approved' && preference_id) {
-            // Resto del código igual...
-            
-            // Construir URL de redirección
-            const redirectUrl = `${process.env.FRONTEND_URL}`;
+        // Actualizar el estado del pago
+        pagoPendiente.estado = 'pagado';
+        pagoPendiente.fechaPago = new Date();
+        await pagoPendiente.save();
 
-            // Agrega logs adicionales para seguimiento
-            console.log('Pago verificado con éxito, redirigiendo a:', redirectUrl);
-            
-            await session.commitTransaction();
-            session.endSession();
-            
-            // Redirección con mensaje más claro
-            res.redirect(redirectUrl);
-            return;
-        } else {
-            // Log específico para entender por qué falló
-            console.log('Verificación fallida. Status:', status);
-            await session.abortTransaction();
-            session.endSession();
-            
-            const errorUrl = `${process.env.FRONTEND_URL}/afiliados?status=failure&reason=payment_not_approved`;
-            res.redirect(errorUrl);
-            return;
+        // Ahora obtenemos la información del afiliado para enviarle el certificado
+        const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
+        if (afiliado) {
+          const certificado = {
+            ingeniero: {
+              nombres: afiliado.nombre.split(' ')[0],
+              apellidos: afiliado.nombre.split(' ')[1],
+              consejoDepartamental: afiliado.consejoDepartamental,
+              registroCIP: afiliado.cipNumero,
+              especialidad: afiliado.especialidad,
+              fechaIncorporacion: afiliado.fechaInicioPago
+            },
+            fechaVigencia: new Date() // Establecer la fecha de vigencia del certificado
+          };
+
+          // Enviar correo con el certificado adjunto
+          await enviarCorreoCertificadoHabilidad({
+            nombre: afiliado.nombre.split(' ')[0], 
+            apellido: afiliado.nombre.split(' ')[1], 
+            email: afiliado.correo
+          }, certificado);
+
+          // Redirigir al frontend
+          const redirectUrl = `${process.env.FRONTEND_URL}`;
+          res.redirect(redirectUrl);
         }
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-
-        console.error('Error al verificar pago de afiliado:', error);
-        const errorUrl = `${process.env.FRONTEND_URL}/afiliados?status=error`;
-        res.redirect(errorUrl);
+      }
     }
+  } catch (error) {
+    console.error('Error al verificar pago:', error);
+    res.status(500).json({ error: 'Error al procesar el pago' });
+  }
 };
 
 export const obtenerEstadoPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
