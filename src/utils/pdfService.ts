@@ -59,39 +59,45 @@ const generarPDF = (
 };
 
 const agregarEncabezado = (doc: PDFDoc) => {
+  // Título principal con subrayado
   const tituloTexto = 'COLEGIO DE INGENIEROS DEL PERÚ';
-
   doc.font('Helvetica-Bold')
-    .fontSize(14)
+    .fontSize(18)
     .fillColor('#d65055')
     .text(tituloTexto, {
       align: 'center',
-      lineGap: 10
+      lineGap: 10,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   const titleWidth = doc.widthOfString(tituloTexto);
   const titleX = (doc.page.width - titleWidth) / 2;
   const yLine = doc.y - 10;
+
+  // Añadir subrayado al título
   doc.moveTo(titleX, yLine)
     .lineTo(titleX + titleWidth, yLine)
     .lineWidth(1)
     .strokeColor('#d65055')
     .stroke();
 
+  // Subtítulo
   doc.font('Helvetica-Bold')
     .fontSize(24)
     .fillColor('#d65055')
     .text('Certificado de Habilidad', {
       align: 'center',
-      lineGap: 15
+      lineGap: 15,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text('Los que suscriben certifican que:', {
       align: 'left',
-      lineGap: 10
+      lineGap: 10,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 };
 
@@ -102,17 +108,21 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   const initialX = doc.x;
 
+  // Texto del Ingeniero
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(textoDescriptivo, {
-      continued: true
+      continued: true,
+      width: doc.page.width - 100
     });
 
   const nombreStartX = initialX + anchoTextoDescriptivo;
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(nombreCompleto);
+    .text(nombreCompleto, {
+      width: doc.page.width - 100  // Centrado con márgenes
+    });
 
   const nombreWidth = doc.widthOfString(nombreCompleto);
   const startY = doc.y - 3;
@@ -130,19 +140,20 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   const anchoTextoConsejo = doc.widthOfString(textoConsejo);
 
   doc.x = initialX;
-
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(textoConsejo, {
-      continued: true
+      continued: true,
+      width: doc.page.width - 100
     });
 
   const consejoStartX = initialX + anchoTextoConsejo;
-
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(consejo);
+    .text(consejo, {
+      width: doc.page.width - 100  // Centrado con márgenes
+    });
 
   const consejoWidth = doc.widthOfString(consejo);
   const consejoY = doc.y - 3;
@@ -155,24 +166,26 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   doc.moveDown(0.5);
 
+  // Registro CIP
   const registro = ingeniero.registroCIP;
   const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
   const anchoTextoRegistro = doc.widthOfString(textoRegistro);
 
   doc.x = initialX;
-
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(textoRegistro, {
-      continued: true
+      continued: true,
+      width: doc.page.width - 100
     });
 
   const registroStartX = initialX + anchoTextoRegistro;
-
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(registro);
+    .text(registro, {
+      width: doc.page.width - 100  // Centrado con márgenes
+    });
 
   const regWidth = doc.widthOfString(registro);
   const regY = doc.y - 3;
@@ -185,24 +198,26 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   doc.moveDown(0.5);
 
+  // Fecha de incorporación
   const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
   const textoFecha = 'Fecha de Incorporación: ';
   const anchoTextoFecha = doc.widthOfString(textoFecha);
 
   doc.x = initialX;
-
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(textoFecha, {
-      continued: true
+      continued: true,
+      width: doc.page.width - 100
     });
 
   const fechaStartX = initialX + anchoTextoFecha;
-
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(fechaInc);
+    .text(fechaInc, {
+      width: doc.page.width - 100  // Centrado con márgenes
+    });
 
   const fechaWidth = doc.widthOfString(fechaInc);
   const fechaY = doc.y - 3;
@@ -215,24 +230,26 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   doc.moveDown(0.5);
 
+  // Especialidad
   const especialidad = ingeniero.especialidad.toUpperCase();
   const textoEspecialidad = 'Especialidad: ';
   const anchoTextoEspecialidad = doc.widthOfString(textoEspecialidad);
 
   doc.x = initialX;
-
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(textoEspecialidad, {
-      continued: true
+      continued: true,
+      width: doc.page.width - 100
     });
 
   const especialidadStartX = initialX + anchoTextoEspecialidad;
-
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(especialidad);
+    .text(especialidad, {
+      width: doc.page.width - 100  // Centrado con márgenes
+    });
 
   const especialidadWidth = doc.widthOfString(especialidad);
   const especialidadY = doc.y - 3;
@@ -248,11 +265,12 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
 const agregarPiePagina = (doc: PDFDoc, lugar: string, fecha: Date) => {
   doc.font('Helvetica')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text(`${lugar.toUpperCase()}, ${formatearFechaTexto(fecha)}`, {
       align: 'left',
-      lineGap: 15
+      lineGap: 15,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   doc.moveTo(50, doc.y)
@@ -264,38 +282,41 @@ const agregarPiePagina = (doc: PDFDoc, lugar: string, fecha: Date) => {
   doc.moveDown(1);
 
   doc.font('Helvetica-Bold')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text('VÁLIDO SOLO ORIGINAL', {
       align: 'left',
-      lineGap: 10
+      lineGap: 10,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   doc.font('Helvetica-Bold')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text('Ing. María del Carmen Ponce Mejía', {
       align: 'right',
-      lineGap: 5
+      lineGap: 5,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   doc.font('Helvetica-Bold')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text('Decana Nacional', {
       align: 'right',
-      lineGap: 5
+      lineGap: 5,
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 
   doc.font('Helvetica-Bold')
-    .fontSize(11)
+    .fontSize(12)
     .fillColor('black')
     .text('Colegio de Ingenieros del Perú', {
-      align: 'right'
+      align: 'right',
+      width: doc.page.width - 100  // Centrado con márgenes
     });
 };
 
-// Exportamos la función
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
   fechaVigencia: Date
