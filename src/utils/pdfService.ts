@@ -85,7 +85,7 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const totalWidth = logoWidth + gap + textBlockWidth;
   const startX = leftMargin;  // Cambiar la posición del logo y texto para alinearlos a la izquierda.
 
-  const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo.png');
+  const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo2.png');
   if (fs.existsSync(logoPath)) {
     doc.image(logoPath, startX - offsetX, headerY - offsetY, {
       width: logoWidth,
@@ -102,16 +102,12 @@ const agregarEncabezado = (doc: PDFDoc) => {
   doc.font('Helvetica-Bold')
     .fontSize(20)
     .fillColor('black')
-    .text('DIÓCESIS DE HUÁNUCO', textX, textY, { width: textBlockWidth, align: 'left', lineGap: 2 });
+    .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'left', lineGap: 2 });
   doc.font('Helvetica-Bold')
     .fontSize(14)
     .fillColor('black')
-    .text('PARTIDA DE MATRIMONIO', { width: textBlockWidth, align: 'left', lineGap: 2 });
-  doc.font('Helvetica-Bold')
-    .fontSize(14)
-    .fillColor('black')
-    .text('Huánuco - Perú', { width: textBlockWidth, align: 'left', lineGap: 4 });
-
+    .text('Certificado de Habilida', { width: textBlockWidth, align: 'left', lineGap: 2 });
+  
   const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
   doc.moveTo(leftMargin, lineY)
     .lineTo(pageWidth - rightMargin, lineY)
