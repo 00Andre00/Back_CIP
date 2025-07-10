@@ -1,3 +1,4 @@
+// nombre de archivo: pdfService.ts
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
@@ -57,6 +58,8 @@ const generarPDF = (
       margins: { top: 40, bottom: 40, left: 50, right: 50 },
     });
 
+    agregarMarcoLInvertida(doc);
+
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
@@ -80,6 +83,18 @@ const agregarEncabezado = (doc: PDFDoc) => {
       lineGap: 10
     });
 
+  // Calculamos el ancho del texto y su posición X para el subrayado
+  const titleWidth = doc.widthOfString(tituloTexto);
+  const titleX = (doc.page.width - titleWidth) / 2;
+
+  // Añadir subrayado al título
+  const yLine = doc.y - 10; // Ajustar según el espaciado deseado
+  doc.moveTo(titleX, yLine)
+    .lineTo(titleX + titleWidth, yLine)
+    .lineWidth(1)
+    .strokeColor('#d65055')
+    .stroke();
+
   // Subtítulo
   doc.font('Helvetica-Bold')
     .fontSize(24)
@@ -94,7 +109,7 @@ const agregarEncabezado = (doc: PDFDoc) => {
     .fontSize(11)
     .fillColor('black')
     .text('Los que suscriben certifican que:', {
-      align: 'center',
+      align: 'left',
       lineGap: 10
     });
 };
@@ -103,105 +118,312 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   // Prefijo e información del ingeniero (solo datos en mayúsculas)
   const nombreCompleto = `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase();
 
+  // Texto descriptivo
   const textoDescriptivo = 'El Ingeniero (a): ';
-  const initialX = (doc.page.width - doc.widthOfString(textoDescriptivo + nombreCompleto)) / 2;
+
+  // Calculamos el ancho del texto descriptivo ANTES de renderizarlo
+  const anchoTextoDescriptivo = doc.widthOfString(textoDescriptivo);
+
+  // Guarda la posición X inicial
+  const initialX = doc.x;
 
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text(textoDescriptivo, initialX, doc.y);
+    .text(textoDescriptivo, {
+      continued: true
+    });
+
+  // La posición X donde comienza el valor es exactamente initialX + anchoTextoDescriptivo
+  const nombreStartX = initialX + anchoTextoDescriptivo;
 
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(nombreCompleto, initialX + doc.widthOfString(textoDescriptivo), doc.y);
+    .text(nombreCompleto);
+
+  // Subrayado para el nombre - solo subrayar el valor, no todo desde el margen
+  const nombreWidth = doc.widthOfString(nombreCompleto);
+  const startY = doc.y - 3; // Ajustar según el espaciado deseado
+
+  doc.moveTo(nombreStartX, startY)
+    .lineTo(nombreStartX + nombreWidth, startY)
+    .lineWidth(0.5)
+    .strokeColor('black')
+    .stroke();
 
   doc.moveDown(1);
 
   // Consejo departamental
   const consejo = ingeniero.consejoDepartamental.toUpperCase();
   const textoConsejo = 'Adscrito al Consejo Departamental de: ';
-  const consejoX = (doc.page.width - doc.widthOfString(textoConsejo + consejo)) / 2;
+  const anchoTextoConsejo = doc.widthOfString(textoConsejo);
+
+  // Resetea la posición X para la nueva línea
+  doc.x = initialX;
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text(textoConsejo, consejoX, doc.y);
+    .text(textoConsejo, {
+      continued: true
+    });
+
+  const consejoStartX = initialX + anchoTextoConsejo;
 
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(consejo, consejoX + doc.widthOfString(textoConsejo), doc.y);
+    .text(consejo);
 
-  doc.moveDown(1);
+  // Subrayado solo para el valor del consejo
+  const consejoWidth = doc.widthOfString(consejo);
+  const consejoY = doc.y - 3;
+
+  doc.moveTo(consejoStartX, consejoY)
+    .lineTo(consejoStartX + consejoWidth, consejoY)
+    .lineWidth(0.5)
+    .strokeColor('black')
+    .stroke();
+
+  doc.moveDown(0.5);
 
   // Registro CIP
   const registro = ingeniero.registroCIP;
   const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
-  const registroX = (doc.page.width - doc.widthOfString(textoRegistro + registro)) / 2;
+  const anchoTextoRegistro = doc.widthOfString(textoRegistro);
+
+  // Resetea la posición X para la nueva línea
+  doc.x = initialX;
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text(textoRegistro, registroX, doc.y);
+    .text(textoRegistro, {
+      continued: true
+    });
+
+  const registroStartX = initialX + anchoTextoRegistro;
 
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(registro, registroX + doc.widthOfString(textoRegistro), doc.y);
+    .text(registro);
 
-  doc.moveDown(1);
+  // Subrayado solo para el valor del registro
+  const regWidth = doc.widthOfString(registro);
+  const regY = doc.y - 3;
+
+  doc.moveTo(registroStartX, regY)
+    .lineTo(registroStartX + regWidth, regY)
+    .lineWidth(0.5)
+    .strokeColor('black')
+    .stroke();
+
+  doc.moveDown(0.5);
 
   // Fecha de incorporación
   const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
   const textoFecha = 'Fecha de Incorporación: ';
-  const fechaX = (doc.page.width - doc.widthOfString(textoFecha + fechaInc)) / 2;
+  const anchoTextoFecha = doc.widthOfString(textoFecha);
+
+  // Resetea la posición X para la nueva línea
+  doc.x = initialX;
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text(textoFecha, fechaX, doc.y);
+    .text(textoFecha, {
+      continued: true
+    });
+
+  const fechaStartX = initialX + anchoTextoFecha;
 
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(fechaInc, fechaX + doc.widthOfString(textoFecha), doc.y);
+    .text(fechaInc);
 
-  doc.moveDown(1);
+  // Subrayado solo para el valor de la fecha
+  const fechaWidth = doc.widthOfString(fechaInc);
+  const fechaY = doc.y - 3;
+
+  doc.moveTo(fechaStartX, fechaY)
+    .lineTo(fechaStartX + fechaWidth, fechaY)
+    .lineWidth(0.5)
+    .strokeColor('black')
+    .stroke();
+
+  doc.moveDown(0.5);
 
   // Especialidad
   const especialidad = ingeniero.especialidad.toUpperCase();
   const textoEspecialidad = 'Especialidad: ';
-  const especialidadX = (doc.page.width - doc.widthOfString(textoEspecialidad + especialidad)) / 2;
+  const anchoTextoEspecialidad = doc.widthOfString(textoEspecialidad);
+
+  // Resetea la posición X para la nueva línea
+  doc.x = initialX;
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text(textoEspecialidad, especialidadX, doc.y);
+    .text(textoEspecialidad, {
+      continued: true
+    });
+
+  const especialidadStartX = initialX + anchoTextoEspecialidad;
 
   doc.font('Helvetica-Bold')
     .fillColor('black')
-    .text(especialidad, especialidadX + doc.widthOfString(textoEspecialidad), doc.y);
+    .text(especialidad);
+
+  // Subrayado solo para el valor de la especialidad
+  const especialidadWidth = doc.widthOfString(especialidad);
+  const especialidadY = doc.y - 3;
+
+  doc.moveTo(especialidadStartX, especialidadY)
+    .lineTo(especialidadStartX + especialidadWidth, especialidadY)
+    .lineWidth(0.5)
+    .strokeColor('black')
+    .stroke();
+
+  doc.moveDown(1);
+}
+
+const agregarMarcoLInvertida = (doc: PDFDoc) => {
+  const x = 50;  // Distancia desde el borde izquierdo del documento
+  const y = 40;  // Distancia desde el borde superior del documento
+  const largo = 100;  // Longitud de la línea vertical y horizontal
+
+  // Línea horizontal superior hacia la derecha
+  doc.moveTo(x, y)
+    .lineTo(x + largo, y)
+    .lineWidth(2)
+    .strokeColor('black')
+    .stroke();
+
+  // Línea vertical hacia abajo desde el mismo punto
+  doc.moveTo(x, y)
+    .lineTo(x, y + largo)
+    .lineWidth(2)
+    .strokeColor('black')
+    .stroke();
+};
+
+
+const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
+  // Texto legal
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
+      align: 'left',
+      lineGap: 15
+    });
+  // Contenido del servicio profesional
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('ASUNTO', {
+      align: 'left',
+      lineGap: 5
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('ENTIDAD O PROPIETARIO', {
+      align: 'left',
+      lineGap: 5
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('LUGAR', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('SERVICIO PROFESIONAL', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('PÚBLICO Y/O PRIVADO', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('A NIVEL NACIONAL', {
+      align: 'left',
+      lineGap: 15
+    });
+
+  // Línea divisoria inferior
+  doc.moveTo(50, doc.y)
+    .lineTo(doc.page.width - 50, doc.y)
+    .lineWidth(1)
+    .strokeColor('black')
+    .stroke();
 
   doc.moveDown(1);
 };
 
+const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
+  // Título de la sección
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  // Valores de vigencia
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text(`DÍA ${fechaVigencia.getDate().toString().padStart(2, '0')}`, {
+      align: 'left',
+      lineGap: 5
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text(`MES ${(fechaVigencia.getMonth() + 1).toString().padStart(2, '0')}`, {
+      align: 'left',
+      lineGap: 5
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text(`AÑO ${fechaVigencia.getFullYear()}`, {
+      align: 'left',
+      lineGap: 15
+    });
+};
+
 const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certificadoId: string) => {
-  const qrUrl = `${process.env.FRONTEND_URL || ''}/certificados/verificar/${certificadoId}`;
-  const qrDataUrl = await generarQR(qrUrl);
-  const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, '');
-  const qrBuffer = Buffer.from(base64Data, 'base64');
-
-  const qrSize = 80;
-  const qrX = (doc.page.width - qrSize) / 2;
-  const qrY = doc.page.height - 140;
-
-  doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
-
-  // Código QR debajo de "VÁLIDO SOLO ORIGINAL"
-  doc.font('Helvetica')
-    .fontSize(10)
-    .fillColor('#666')
-    .text(certificadoId, qrX, qrY + qrSize + 5, { width: qrSize, align: 'center' });
-
   // Lugar y fecha
+  interface PiePaginaOptions {
+    lugar: string;
+    fecha: Date;
+    certificadoId: string;
+  }
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
     .text(`${lugar.toUpperCase()}, ${formatearFechaTexto(fecha)}`, {
-      align: 'center',
+      align: 'left',
       lineGap: 15
     });
 
@@ -219,7 +441,7 @@ const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certifi
     .fontSize(11)
     .fillColor('black')
     .text('VÁLIDO SOLO ORIGINAL', {
-      align: 'center',
+      align: 'left',
       lineGap: 10
     });
 
@@ -228,7 +450,7 @@ const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certifi
     .fontSize(11)
     .fillColor('black')
     .text('Ing. María del Carmen Ponce Mejía', {
-      align: 'center',
+      align: 'right',
       lineGap: 5
     });
 
@@ -236,7 +458,7 @@ const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certifi
     .fontSize(11)
     .fillColor('black')
     .text('Decana Nacional', {
-      align: 'center',
+      align: 'right',
       lineGap: 5
     });
 
@@ -244,31 +466,44 @@ const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certifi
     .fontSize(11)
     .fillColor('black')
     .text('Colegio de Ingenieros del Perú', {
-      align: 'center'
+      align: 'right'
     });
+
+  // Generar el QR con la URL de verificación
+  const verificationUrl = `${process.env.FRONTEND_URL || ''}/certificados/verificar/${certificadoId}`;
+  const qrDataUrl = await generarQR(verificationUrl);  // Se pasa la URL para generar el QR
+  const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, '');
+  const qrBuffer = Buffer.from(base64Data, 'base64');
+
+  // Posición del QR en el pie de página
+  const qrSize = 80;
+  const qrX = doc.page.margins.left;
+  const qrY = doc.page.height - 160;  // Se coloca cerca de la firma
+  doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+
+  // Código QR debajo de la firma
+  doc.font('Helvetica')
+    .fontSize(10)
+    .fillColor('#666')
+    .text(certificadoId, qrX, qrY + qrSize + 5, { width: qrSize, align: 'center' });
 };
 
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
   fechaVigencia: Date,
-  certificadoId: string
+  certificadoId: string  // Asegúrate de que el certificadoId esté disponible
 ): Promise<string> => {
   const pdfPath = path.join(tempDir, `certificado_habilidad_${Date.now()}.pdf`);
 
   return generarPDF(pdfPath, async (doc) => {
+    // Configuración inicial
     doc.info.Title = 'Certificado de Habilidad - CIP';
+
+    // Contenido en orden exacto
     agregarEncabezado(doc);
     agregarInformacionIngeniero(doc, ingeniero);
     agregarSeccionServicioProfesional(doc);
     agregarVigencia(doc, fechaVigencia);
-    await agregarPiePagina(doc, 'HUANUCO', new Date(), certificadoId);
-  });
+    await agregarPiePagina(doc, 'HUANUCO', new Date(), certificadoId);  // Se pasa el ID del certificado para generar el QR
+  });
 };
-function agregarSeccionServicioProfesional(doc: any) {
-  throw new Error('Function not implemented.');
-}
-
-function agregarVigencia(doc: any, fechaVigencia: Date) {
-  throw new Error('Function not implemented.');
-}
-
