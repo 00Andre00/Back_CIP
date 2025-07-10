@@ -225,9 +225,10 @@ const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
   doc.font('Helvetica')
     .fontSize(12)
     .fillColor('#000')
-    .text('Firma del Párroco', doc.page.width - doc.page.margins.right - 140, sealY, { width: 150, align: 'center' })
-    .text('________________________', doc.page.width - doc.page.margins.right - 140, sealY + 20, { width: 150, align: 'center' })
-    .text('Sello de la Parroquia', doc.page.width - doc.page.margins.right - 140, sealY + 60, { width: 150, align: 'center' });
+    .text('__________________________________', doc.page.width - doc.page.margins.right - 140, sealY + 20, { width: 150, align: 'center' })
+    .text('Ing. María del Carmen Ponce Mejía', doc.page.width - doc.page.margins.right - 140, sealY, { width: 150, align: 'center' })
+    .text('Decana Nacional', doc.page.width - doc.page.margins.right - 140, sealY + 40, { width: 150, align: 'center' })
+    .text('Colegio de Ingenieros del Perú', doc.page.width - doc.page.margins.right - 140, sealY + 60, { width: 150, align: 'center' });
 };
 
 const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
