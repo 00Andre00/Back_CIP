@@ -153,7 +153,8 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
               especialidad: afiliado.especialidad,
               fechaIncorporacion: afiliado.fechaInicioPago
             },
-            fechaVigencia: new Date() // Establecer la fecha de vigencia del certificado
+            fechaVigencia: new Date(), // Establecer la fecha de vigencia del certificado
+            _id: pagoPendiente._id?.toString() || '' // Agregar el certificadoId
           };
 
           // Enviar correo con el certificado adjunto

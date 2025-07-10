@@ -1,52 +1,45 @@
 import { Request, Response } from 'express';
 import { enviarCorreoCertificadoHabilidad } from '../utils/emailService';
-import { IIngeniero } from '../models/Certificado';
+
+interface Ingeniero {
+  nombres: string;
+  apellidos: string;
+  consejoDepartamental: string;
+  registroCIP: string;
+  especialidad: string;
+  fechaIncorporacion: Date;
+}
+
+interface CertificadoRequest {
+  nombre: string;
+  apellido: string;
+  email: string;
+  ingeniero: Ingeniero;
+  fechaVigencia: Date;
+  certificadoId: string;  // Se agrega el campo certificadoId
+}
 
 export const enviarCertificadoHabilidad = async (req: Request, res: Response) => {
   try {
-    const { email, nombre, apellido, consejoDepartamental, registroCIP, especialidad, fechaIncorporacion } = req.body;
-    
-    if (!email || !nombre || !apellido || !consejoDepartamental || !registroCIP || !especialidad) {
+    const { nombre, apellido, email, ingeniero, fechaVigencia, certificadoId }: CertificadoRequest = req.body;
+
+    if (!email || !nombre || !apellido || !ingeniero || !fechaVigencia || !certificadoId) {
       return res.status(400).json({ 
         success: false, 
         message: 'Faltan datos requeridos' 
       });
     }
-    
-    // Calcular fecha de vigencia (3 meses a partir de hoy)
-    const fechaVigencia = new Date();
-    fechaVigencia.setMonth(fechaVigencia.getMonth() + 3);
-    
-    // Datos del ingeniero para el certificado
-    const ingeniero = {
-      nombres: nombre,
-      apellidos: apellido,
-      consejoDepartamental,
-      registroCIP,
-      especialidad,
-      fechaIncorporacion: fechaIncorporacion ? new Date(fechaIncorporacion) : new Date()
-    };
-    
-    // Datos del usuario para el correo
-    const usuario = {
-      nombre,
-      apellido,
-      email
-    };
-    
+
     // Enviar certificado por correo
-    await enviarCorreoCertificadoHabilidad(usuario, {
-      ingeniero,
-      fechaVigencia
-    });
-    
+    await enviarCorreoCertificadoHabilidad(
+      { nombre, apellido, email },
+      { ingeniero, fechaVigencia, _id: certificadoId } // Se pasa el certificadoId
+    );
+
     res.status(200).json({
       success: true,
       message: 'Certificado enviado correctamente al correo',
-      data: {
-        email,
-        fechaVigencia
-      }
+      data: { email, fechaVigencia, certificadoId }  // También se puede retornar el certificadoId en la respuesta
     });
     
   } catch (error) {
@@ -55,6 +48,6 @@ export const enviarCertificadoHabilidad = async (req: Request, res: Response) =>
       success: false,
       message: 'Error al enviar el certificado',
       error: (error as Error).message
-    });
-  }
+    });
+  }
 };

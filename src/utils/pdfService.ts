@@ -2,6 +2,7 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import QRCode from 'qrcode';
 
 const tempDir = path.join(__dirname, '../../temp');
 if (!fs.existsSync(tempDir)) {
@@ -37,6 +38,15 @@ const formatearFechaTexto = (fecha: Date): string => {
   return `${dia} de ${mes} del ${año}`;
 };
 
+const generarQR = async (text: string): Promise<string> => {
+  try {
+    return await QRCode.toDataURL(text);  // Genera el QR a partir de la URL
+  } catch (error) {
+    console.error('Error al generar el QR:', error);
+    throw error;
+  }
+};
+
 const generarPDF = (
   pdfPath: string,
   generarContenido: (doc: PDFDoc) => void
@@ -47,6 +57,8 @@ const generarPDF = (
       layout: 'portrait',
       margins: { top: 40, bottom: 40, left: 50, right: 50 },
     });
+
+    agregarMarcoLInvertida(doc);
 
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
@@ -273,6 +285,28 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   doc.moveDown(1);
 }
+
+const agregarMarcoLInvertida = (doc: PDFDoc) => {
+  const x = 50;  // Distancia desde el borde izquierdo del documento
+  const y = 40;  // Distancia desde el borde superior del documento
+  const largo = 100;  // Longitud de la línea vertical y horizontal
+
+  // Línea horizontal superior hacia la derecha
+  doc.moveTo(x, y)
+    .lineTo(x + largo, y)
+    .lineWidth(2)
+    .strokeColor('black')
+    .stroke();
+
+  // Línea vertical hacia abajo desde el mismo punto
+  doc.moveTo(x, y)
+    .lineTo(x, y + largo)
+    .lineWidth(2)
+    .strokeColor('black')
+    .stroke();
+};
+
+
 const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
   // Texto legal
   doc.font('Helvetica')
@@ -377,8 +411,14 @@ const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
     });
 };
 
-const agregarPiePagina = (doc: PDFDoc, lugar: string, fecha: Date) => {
+const agregarPiePagina = async (doc: PDFDoc, lugar: string, fecha: Date, certificadoId: string) => {
   // Lugar y fecha
+  interface PiePaginaOptions {
+    lugar: string;
+    fecha: Date;
+    certificadoId: string;
+  }
+
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
@@ -428,15 +468,34 @@ const agregarPiePagina = (doc: PDFDoc, lugar: string, fecha: Date) => {
     .text('Colegio de Ingenieros del Perú', {
       align: 'right'
     });
+
+  // Generar el QR con la URL de verificación
+  const verificationUrl = `${process.env.FRONTEND_URL || ''}/certificados/verificar/${certificadoId}`;
+  const qrDataUrl = await generarQR(verificationUrl);  // Se pasa la URL para generar el QR
+  const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, '');
+  const qrBuffer = Buffer.from(base64Data, 'base64');
+
+  // Posición del QR en el pie de página
+  const qrSize = 80;
+  const qrX = doc.page.margins.left;
+  const qrY = doc.page.height - 160;  // Se coloca cerca de la firma
+  doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+
+  // Código QR debajo de la firma
+  doc.font('Helvetica')
+    .fontSize(10)
+    .fillColor('#666')
+    .text(certificadoId, qrX, qrY + qrSize + 5, { width: qrSize, align: 'center' });
 };
 
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
-  fechaVigencia: Date
+  fechaVigencia: Date,
+  certificadoId: string  // Asegúrate de que el certificadoId esté disponible
 ): Promise<string> => {
   const pdfPath = path.join(tempDir, `certificado_habilidad_${Date.now()}.pdf`);
 
-  return generarPDF(pdfPath, (doc) => {
+  return generarPDF(pdfPath, async (doc) => {
     // Configuración inicial
     doc.info.Title = 'Certificado de Habilidad - CIP';
 
@@ -445,6 +504,6 @@ export const generarPDFCertificadoHabilidad = async (
     agregarInformacionIngeniero(doc, ingeniero);
     agregarSeccionServicioProfesional(doc);
     agregarVigencia(doc, fechaVigencia);
-    agregarPiePagina(doc, 'HUANUCO', new Date());
-  });
+    await agregarPiePagina(doc, 'HUANUCO', new Date(), certificadoId);  // Se pasa el ID del certificado para generar el QR
+  });
 };
