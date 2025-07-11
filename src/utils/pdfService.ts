@@ -58,17 +58,19 @@ const encabezado = (doc: PDFDoc) => {
     .font('Helvetica-Bold')
     .fontSize(20)
     .text('COLEGIO DE INGENIEROS DEL PERÚ', m.left + 108, m.top, { align: 'left' })
-    .moveDown(0.3)
+    .moveDown(0.2)
     .fontSize(14)
     .text('Certificado de Habilidad', { align: 'left' });
 
-  const y = doc.y + 10;
+  const y = doc.y + 6;               // ← línea más pegada al texto
   doc
     .moveTo(m.left, y)
     .lineTo(doc.page.width - m.right, y)
+    .strokeColor('#000')
     .lineWidth(1)
     .stroke();
-  doc.moveDown(1.5);
+
+  doc.moveDown(1.8);                 // ← ¡ESPACIO EXTRA!
 };
 
 /* dibuja linea subrayada desde fin del texto hasta margen derecho */
@@ -85,37 +87,35 @@ const subrayar = (doc: PDFDoc, xIni: number, y: number) => {
 /* cuerpo maquetado como en la imagen */
 const infoIngeniero = (doc: PDFDoc, ing: Ingeniero) => {
   const m = doc.page.margins;
-  const x = m.left + 2;          // un pequeño margen interno
-  const gap = 3;                 // espacio vertical entre líneas
+  const x = m.left + 2;
+  const gap = 0.45;          // ← tamaño del salto entre líneas (en “moveDown”)
 
-  const drawCampo = (label: string, valor: string) => {
-    doc
-      .font('Helvetica')
-      .fontSize(11)
-      .text(label, x, doc.y, { continued: true });
+  const draw = (label: string, val: string) => {
+    doc.font('Helvetica').text(label, x, doc.y, { continued: true });
     const xVal = doc.x;
-    doc.font('Helvetica-Bold').text(valor);
+    doc.font('Helvetica-Bold').text(val);
     subrayar(doc, xVal, doc.y - 11);
-    doc.moveDown(gap / 10);
+    doc.moveDown(gap);
   };
 
-  drawCampo('El Ingeniero (a): ', `${ing.apellidos} ${ing.nombres}`.toUpperCase());
-  drawCampo('Adscrito al Consejo Departamental de: ', ing.consejoDepartamental.toUpperCase());
+  draw('El Ingeniero (a): ', `${ing.apellidos} ${ing.nombres}`.toUpperCase());
+  draw('Adscrito al Consejo Departamental de: ', ing.consejoDepartamental.toUpperCase());
 
-  /* línea mixta CIP + fecha */
+  /* CIP  +  Fecha */
   doc.font('Helvetica').text('Con Registro de Matrícula del CIP Nº: ', x, doc.y, { continued: true });
   const xCip = doc.x;
   doc.font('Helvetica-Bold').text(ing.registroCIP, { continued: true });
   subrayar(doc, xCip, doc.y - 11);
 
   doc.font('Helvetica').text('    Fecha de Incorporación: ', { continued: true });
-  const xFecha = doc.x;
+  const xF = doc.x;
   doc.font('Helvetica-Bold').text(fechaNum(ing.fechaIncorporacion));
-  subrayar(doc, xFecha, doc.y - 11);
-  doc.moveDown(gap / 10);
+  subrayar(doc, xF, doc.y - 11);
+  doc.moveDown(gap);
 
-  drawCampo('Especialidad: ', ing.especialidad.toUpperCase());
-  doc.moveDown(0.5);
+  draw('Especialidad: ', ing.especialidad.toUpperCase());
+  doc.moveDown(gap + 0.3);   // ← más separación antes del párrafo legal
+
 
   /* párrafo legal */
   doc
