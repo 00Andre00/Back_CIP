@@ -133,8 +133,7 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
 };
 
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
-  const left = 60;                  // margen izquierdo
-              // margen izquierdo
+  const left  = doc.page.margins.left;                 // margen izquierdo
   const right = doc.page.width - doc.page.margins.right;
   const fs    = 11;                                    // font-size base
   const gap   = 0;                                     // hueco antes de la línea
@@ -168,7 +167,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   // ——— 1. Encabezado ————————————————————————————
   doc.font('Helvetica').fontSize(fs)
-     .text('Los que suscriben certifican que:',left,top)
+     .text('Los que suscriben certifican que:')
      .moveDown(0.8);
 
   // ——— 2. Campos simples —————————————————————————
@@ -262,11 +261,10 @@ doc.text('Decana Nacional', sealX, lineY + 30, { width: sealWidth, align: 'cente
  
 
 const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
-  const left = 60;
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).',left, top, {
+    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
       align: 'left',
       lineGap: 15
     });
