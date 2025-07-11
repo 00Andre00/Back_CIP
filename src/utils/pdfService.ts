@@ -133,7 +133,8 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
 };
 
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
-  const left  = doc.page.margins.left;                 // margen izquierdo
+  const left = 60;                  // margen izquierdo
+              // margen izquierdo
   const right = doc.page.width - doc.page.margins.right;
   const fs    = 11;                                    // font-size base
   const gap   = 0;                                     // hueco antes de la línea
@@ -261,6 +262,7 @@ doc.text('Decana Nacional', sealX, lineY + 30, { width: sealWidth, align: 'cente
  
 
 const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
+  const left = 60;
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
