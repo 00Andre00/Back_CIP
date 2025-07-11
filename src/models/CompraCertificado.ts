@@ -1,3 +1,4 @@
+// nombre: CompraCertificado.ts
 import { Schema, model, Document } from "mongoose";
 import { ICertificado } from "./Certificado";
 import { IUsuarioNormal } from "./UsuarioNormal";

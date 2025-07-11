@@ -1,3 +1,4 @@
+// nombre: certificadoController.ts
 import { Request, Response } from 'express';
 import { enviarCorreoCertificadoHabilidad } from '../utils/emailService';
 

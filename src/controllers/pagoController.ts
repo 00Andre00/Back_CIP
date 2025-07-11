@@ -6,6 +6,7 @@ import PagoAfiliado from '../models/PagoAfiliado';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { enviarCorreoCertificadoHabilidad } from '../utils/emailService'; 
+import Certificado from '../models/Certificado';
 dotenv.config();
 if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
     throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
@@ -18,164 +19,172 @@ const client = new MercadoPagoConfig({
 
 export const crearPreferenciaAfiliado = async (req: Request, res: Response): Promise<void> => {
     try {
-        console.log('Datos recibidos para crear preferencia:', req.body);
-
-        const { title, quantity, price, afiliadoId, mesesPagados } = req.body;
-
-        // Validate input with more detailed checks
-        if (!afiliadoId) {
-            console.error('Error: afiliadoId no proporcionado');
-            res.status(400).json({ error: "ID de afiliado es requerido" });
-            return;
-        }
-
-        if (!mesesPagados || !Array.isArray(mesesPagados)) {
-            console.error('Error: mesesPagados inválido', mesesPagados);
-            res.status(400).json({ error: "Meses pagados son inválidos" });
-            return;
-        }
-
-        if (!title || !quantity || !price) {
-            console.error('Error: Datos de pago incompletos', { title, quantity, price });
-            res.status(400).json({ error: "Datos de pago incompletos" });
-            return;
-        }
-
-        // Convert mesesPagados to proper Date objects
-        const mesesPagadosFormateados = mesesPagados.map(m => {
-            // If it's already a Date object, use it
-            if (m instanceof Date) return m;
-            
-            // If it's a string, try to parse it
-            if (typeof m === 'string') {
-                const fecha = new Date(m);
-                return fecha.toISOString();
-            }
-            
-            // If it's an object with a date property
-            if (m && m.fecha) {
-                const fecha = new Date(m.fecha);
-                return fecha.toISOString();
-            }
-            
-            // Fallback
-            return new Date().toISOString();
-        });
-
-        // Find affiliate
-        const afiliado = await Afiliado.findById(afiliadoId);
-        if (!afiliado) {
-            console.error(`Error: Afiliado no encontrado con ID ${afiliadoId}`);
-            res.status(404).json({ error: "Afiliado no encontrado" });
-            return;
-        }
-
-        const body = {
-            items: [
-                {
-                    id: '1',
-                    title,
-                    quantity: Number(quantity),
-                    unit_price: Number(price),
-                    currency_id: "PEN",
-                    description: `Pago de membresía para ${afiliado.nombre}`
-                }
-            ],
-            back_urls: {
-                success: `${process.env.BACKEND_URL}/api/afiliados/verificar-pago`,
-                failure: `${process.env.FRONTEND_URL}/afiliados?status=failure`,
-                pending: `${process.env.FRONTEND_URL}/afiliados?status=pending`
-            },
-            metadata: {
-                afiliadoId,
-                mesesPagados: mesesPagadosFormateados
-            },
-            auto_return: "approved",
-            notification_url: `${process.env.BACKEND_URL}/api/afiliados/webhook-pago`
-        };
-
-        console.log('Cuerpo de preferencia a enviar:', body);
-
-        const preference = new Preference(client);
-        const result = await preference.create({ body });
-
-        console.log('Resultado de creación de preferencia:', result);
-
-        const nuevoPago = new PagoAfiliado({
-            afiliado: afiliadoId,
-            mesesPagados: mesesPagadosFormateados.map(m => new Date(m)),
-            preferenceId: result.id,
-            estado: 'pendiente',
-            montoTotal: Number(quantity) * Number(price)
-        });
-        await nuevoPago.save();
-
-        res.json({
-            id: result.id,
-            init_point: result.init_point
-        });
+      const { title, quantity, price, afiliadoId, mesesPagados, certificadoId } = req.body;
+  
+      // Validaciones (asegurarse que el afiliadoId, mesesPagados y certificadoId estén presentes)
+      if (!afiliadoId) {
+        res.status(400).json({ error: "ID de afiliado es requerido" });
+        return;
+      }
+  
+      if (!mesesPagados || !Array.isArray(mesesPagados)) {
+        res.status(400).json({ error: "Meses pagados son inválidos" });
+        return;
+      }
+  
+      if (!title || !quantity || !price) {
+        res.status(400).json({ error: "Datos de pago incompletos" });
+        return;
+      }
+  
+      // Convertir mesesPagados a objetos Date
+      const mesesPagadosFormateados = mesesPagados.map(m => new Date(m));
+  
+      // Buscar afiliado
+      const afiliado = await Afiliado.findById(afiliadoId);
+      if (!afiliado) {
+        res.status(404).json({ error: "Afiliado no encontrado" });
+        return;
+      }
+  
+      const body = {
+        items: [
+          {
+            id: '1',
+            title,
+            quantity: Number(quantity),
+            unit_price: Number(price),
+            currency_id: "PEN",
+            description: `Pago de membresía para ${afiliado.nombre}`
+          }
+        ],
+        back_urls: {
+          success: `${process.env.BACKEND_URL}/api/afiliados/verificar-pago`,
+          failure: `${process.env.FRONTEND_URL}/afiliados?status=failure`,
+          pending: `${process.env.FRONTEND_URL}/afiliados?status=pending`
+        },
+        metadata: {
+          afiliadoId,
+          mesesPagados: mesesPagadosFormateados,
+          certificadoId, // Incluimos el certificadoId aquí
+        },
+        auto_return: "approved",
+        notification_url: `${process.env.BACKEND_URL}/api/afiliados/webhook-pago`
+      };
+  
+      // Crear preferencia de pago con MercadoPago
+      const preference = new Preference(client);
+      const result = await preference.create({ body });
+  
+      // Guardar el pago en la base de datos
+      const nuevoPago = new PagoAfiliado({
+        afiliado: afiliadoId,
+        mesesPagados: mesesPagadosFormateados,
+        preferenceId: result.id,
+        estado: 'pendiente',
+        montoTotal: Number(quantity) * Number(price)
+      });
+      await nuevoPago.save();
+  
+      res.json({
+        id: result.id,
+        init_point: result.init_point
+      });
     } catch (error) {
-        console.error('Error detallado al crear preferencia de pago:', error);
-        res.status(500).json({
-            error: "Error al crear la preferencia de pago",
-            detalle: error instanceof Error ? error.message : 'Error desconocido'
-        });
+      res.status(500).json({ error: "Error al crear la preferencia de pago" });
     }
-};
+  };
 
-export const verificarPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { payment_id, status, preference_id } = req.query;
-
-    if (status === 'approved' && preference_id) {
+  export const verificarPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { payment_id, status, preference_id } = req.query;
+  
+      // Verificar que el payment_id y preference_id están presentes
+      if (!payment_id || !preference_id) {
+        res.status(400).json({ message: 'Faltan parámetros de pago' });
+        return;
+      }
+  
+      // Buscar el pago pendiente con el preference_id
       const pagoPendiente = await PagoAfiliado.findOne({ preferenceId: preference_id });
-
-      if (pagoPendiente) {
-        // Verificar si pagoId ya existe antes de actualizar
-        if (!pagoPendiente.pagoId) {
-          pagoPendiente.pagoId = payment_id as string;  // Asignar pagoId si no existe
-        }
-
+  
+      if (!pagoPendiente) {
+        res.status(404).json({ message: 'Pago no encontrado' });
+        return;
+      }
+  
+      // Verificar si el pago ha sido aprobado
+      if (status === 'approved') {
         // Actualizar el estado del pago
         pagoPendiente.estado = 'pagado';
+        pagoPendiente.pagoId = payment_id as string;
         pagoPendiente.fechaPago = new Date();
         await pagoPendiente.save();
-
-        // Ahora obtenemos la información del afiliado para enviarle el certificado
-        const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
-        if (afiliado) {
-          const certificado = {
-            ingeniero: {
-              nombres: afiliado.nombre.split(' ')[0],
-              apellidos: afiliado.nombre.split(' ')[1],
-              consejoDepartamental: afiliado.consejoDepartamental,
-              registroCIP: afiliado.cipNumero,
-              especialidad: afiliado.especialidad,
-              fechaIncorporacion: afiliado.fechaInicioPago
-            },
-            fechaVigencia: new Date(), // Establecer la fecha de vigencia del certificado
-            _id: pagoPendiente._id?.toString() || '' // Agregar el certificadoId
-          };
-
-          // Enviar correo con el certificado adjunto
-          await enviarCorreoCertificadoHabilidad({
-            nombre: afiliado.nombre.split(' ')[0], 
-            apellido: afiliado.nombre.split(' ')[1], 
-            email: afiliado.correo
-          }, certificado);
-
-          // Redirigir al frontend
-          const redirectUrl = `${process.env.FRONTEND_URL}`;
-          res.redirect(redirectUrl);
+  
+        // Obtener el ID del certificado desde los metadatos
+        const certificadoId = pagoPendiente.metadata?.certificadoId;
+  
+        if (certificadoId) {
+          // Si existe un certificado, verificar si está asociado con el afiliado
+          const certificado = await Certificado.findById(certificadoId);
+  
+          if (certificado) {
+            // Si el certificado existe, actualizar el estado del afiliado a "Al día" y asignar la fecha del último pago
+            const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
+  
+            if (afiliado) {
+              const fechaMasReciente = new Date(Math.max(
+                ...pagoPendiente.mesesPagados.map((fecha: Date) => fecha.getTime())
+              ));
+  
+              // Actualizar el estado del afiliado
+              afiliado.estadoPago = 'Al día';
+              afiliado.ultimoMesPagado = fechaMasReciente;
+              await afiliado.save();
+            }
+  
+            // Enviar correo con el certificado de habilitación
+            await enviarCorreoCertificadoHabilidad({
+              nombre: certificado.nombres,
+              apellido: certificado.apellidos,
+              email: certificado.email,
+            }, {
+              ingeniero: {
+                nombres: certificado.nombres,
+                apellidos: certificado.apellidos,
+                consejoDepartamental: certificado.consejoDepartamental,
+                registroCIP: certificado.registroCIP,
+                especialidad: certificado.especialidad,
+                fechaIncorporacion: certificado.fechaIncorporacion,
+              },
+              fechaVigencia: certificado.fechaVigencia || new Date(), // Establecer la fecha de vigencia
+              _id: certificado._id?.toString() || '',
+            });
+  
+            // Responder con éxito
+            res.status(200).json({ message: 'Pago aprobado y certificado enviado correctamente.' });
+          } else {
+            // Si no se encuentra el certificado
+            res.status(404).json({ message: 'Certificado no encontrado' });
+          }
+        } else {
+          // Si no se proporciona certificadoId en los metadatos
+          res.status(400).json({ message: 'Certificado no proporcionado en los metadatos' });
         }
+      } else {
+        // Si el pago no fue aprobado, actualizar el estado a fallido
+        pagoPendiente.estado = 'fallido';
+        await pagoPendiente.save();
+  
+        // Responder con un mensaje de pago rechazado
+        res.status(400).json({ message: 'Pago no aprobado' });
       }
+    } catch (error) {
+      console.error('Error al verificar pago:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      res.status(500).json({ message: 'Error al procesar el pago', error: errorMessage });
     }
-  } catch (error) {
-    console.error('Error al verificar pago:', error);
-    res.status(500).json({ error: 'Error al procesar el pago' });
-  }
-};
-
+  };
 export const obtenerEstadoPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
     try {
         const { afiliadoId } = req.params;

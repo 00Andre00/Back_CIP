@@ -10,7 +10,15 @@ export interface IPagoAfiliado extends Document {
     fechaCreacion: Date;
     montoTotal: number;
     fechaPago?: Date;
+    metadata?: {
+        certificadoId?: string;
+        [key: string]: any;
+    };
 }
+
+
+
+
 
 const PagoAfiliadoSchema: Schema = new Schema({
     afiliado: {
@@ -37,6 +45,12 @@ const PagoAfiliadoSchema: Schema = new Schema({
     fechaCreacion: {
         type: Date,
         default: Date.now
+    },
+    fechaPago: { type: Date },
+    metadata: {
+        type: Map,
+        of: mongoose.Schema.Types.Mixed,
+        default: {}
     }
 });
 

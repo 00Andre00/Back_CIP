@@ -1,3 +1,4 @@
+// nombre: certificadoRoutes.ts
 import express from 'express';
 import { enviarCertificadoHabilidad } from '../controllers/certificadoController';
 import { verificarCertificado } from '../controllers/verificacionController';

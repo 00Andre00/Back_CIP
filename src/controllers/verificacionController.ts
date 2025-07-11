@@ -1,3 +1,4 @@
+// nombre: verificacionController.ts
 import { Request, Response, NextFunction } from 'express';
 import Certificado from '../models/Certificado'; // Asegúrate de que la ruta sea correcta
 
