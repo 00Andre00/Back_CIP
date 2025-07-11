@@ -133,6 +133,7 @@ export const crearPreferenciaAfiliado = async (req: Request, res: Response): Pro
             const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
   
             if (afiliado) {
+              // Calcular la fecha más reciente de los meses pagados
               const fechaMasReciente = new Date(Math.max(
                 ...pagoPendiente.mesesPagados.map((fecha: Date) => fecha.getTime())
               ));
@@ -158,7 +159,7 @@ export const crearPreferenciaAfiliado = async (req: Request, res: Response): Pro
                 fechaIncorporacion: certificado.fechaIncorporacion,
               },
               fechaVigencia: certificado.fechaVigencia || new Date(), // Establecer la fecha de vigencia
-              _id: certificado._id?.toString() || '',
+              _id: certificado._id?.toString() || '', // Usar el ID del certificado
             });
   
             // Responder con éxito
@@ -185,6 +186,8 @@ export const crearPreferenciaAfiliado = async (req: Request, res: Response): Pro
       res.status(500).json({ message: 'Error al procesar el pago', error: errorMessage });
     }
   };
+
+  
 export const obtenerEstadoPagoAfiliado = async (req: Request, res: Response): Promise<void> => {
     try {
         const { afiliadoId } = req.params;
