@@ -427,7 +427,7 @@ export const generarPDFCertificadoHabilidad = async (
     agregarInformacionIngeniero(doc, ingeniero);
     agregarSeccionServicioProfesional(doc);
     agregarVigenciaYUbicacion(doc, new Date());
-    agregarTituloCertificado(doc, "habilidad");
+    
     await agregarPieCertificado(doc, certificadoId);
   });
 };
