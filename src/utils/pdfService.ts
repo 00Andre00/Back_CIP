@@ -1,12 +1,12 @@
-/* ----------------- pdfService.ts  ----------------- */
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
 
-/* ---------- utilidades y tipos ---------- */
 const tempDir = path.join(__dirname, '../../temp');
-if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
 
 type PDFDoc = InstanceType<typeof PDFDocument>;
 
@@ -19,187 +19,290 @@ interface Ingeniero {
   especialidad: string;
 }
 
-const fechaNum = (d: Date) =>
-  `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}/${d.getFullYear()}`;
+const formatearFechaNumerica = (fecha: Date): string => {
+  const dia = fecha.getDate().toString().padStart(2, '0');
+  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+  const año = fecha.getFullYear();
+  return `${dia}/${mes}/${año}`;
+};
 
-const qrData = (t: string) =>
-  QRCode.toDataURL(t).then(b64 => Buffer.from(b64.replace(/^data:image.+;base64,/, ''), 'base64'));
-/* ----------------------------------------- */
+const formatearFechaTexto = (fecha: Date): string => {
+  const meses = [
+    'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+    'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+  ];
+  const dia = fecha.getDate();
+  const mes = meses[fecha.getMonth()];
+  const año = fecha.getFullYear().toString().slice(-2); // Solo últimos dos dígitos
+  return `${dia} de ${mes} del ${año}`;
+};
 
-/* ---------- generador base ---------- */
-const crearPDF = (ruta: string, fn: (doc: PDFDoc) => void | Promise<void>) =>
-  new Promise<string>((ok, err) => {
+const generarQR = async (text: string): Promise<string> => {
+  try {
+    return await QRCode.toDataURL(text);  // Genera el QR a partir de la URL
+  } catch (error) {
+    console.error('Error al generar el QR:', error);
+    throw error;
+  }
+};
+
+const generarPDF = (
+  pdfPath: string,
+  generarContenido: (doc: PDFDoc) => void | Promise<void>
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      layout: 'portrait',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
-    const ws = fs.createWriteStream(ruta);
-    doc.pipe(ws);
+    const writeStream = fs.createWriteStream(pdfPath);
+    doc.pipe(writeStream);
 
-    Promise.resolve(fn(doc))
-      .then(() => doc.end())
-      .catch(err);
+    Promise.resolve(generarContenido(doc))
+      .then(() => { doc.end(); })
+      .catch(err => { reject(err); });
 
-    ws.on('finish', () => ok(ruta));
-    ws.on('error', err);
+    writeStream.on('finish', () => resolve(pdfPath));
+    writeStream.on('error', (error) => {
+      console.error('Error al escribir el archivo PDF:', error);
+      reject(error);
+    });
   });
-/* ------------------------------------- */
+};
 
-/* ---------- bloques ---------- */
-const encabezado = (doc: PDFDoc) => {
-  const m = doc.page.margins;
-  const logo = path.join(process.cwd(), 'src', 'assets', 'logo2.png');
+const agregarEncabezado = (doc: PDFDoc) => {
+  const leftMargin = doc.page.margins.left;
+  const rightMargin = doc.page.margins.right;
+  const pageWidth = doc.page.width;
+  const headerY = doc.page.margins.top;
+  const offsetX = 10;
+  const offsetY = 5;
+  const logoWidth = 100;
+  const logoHeight = 100;
+  const gap = 2;
+  const textBlockWidth = 300;
+  const totalWidth = logoWidth + gap + textBlockWidth;
+  const startX = leftMargin;  // Cambiar la posición del logo y texto para alinearlos a la izquierda.
 
-  if (fs.existsSync(logo)) doc.image(logo, m.left, m.top, { width: 100 });
+  const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo2.png');
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, startX - offsetX, headerY - offsetY, {
+      width: logoWidth,
+      height: logoHeight
+    });
+  } else {
+    console.error('Logo no encontrado en la ruta:', logoPath);
+  }
 
-  doc
-    .font('Helvetica-Bold')
+  const textX = startX + logoWidth + gap - offsetX;
+  const textBlockHeight = 52;
+  const textY = headerY + (logoHeight - textBlockHeight) / 2;
+
+  doc.font('Helvetica-Bold')
     .fontSize(20)
-    .text('COLEGIO DE INGENIEROS DEL PERÚ', m.left + 108, m.top, { align: 'left' })
-    .moveDown(0.2)
+    .fillColor('black')
+    .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'left', lineGap: 2 });
+  doc.font('Helvetica-Bold')
     .fontSize(14)
-    .text('Certificado de Habilidad', { align: 'left' });
+    .fillColor('black')
+    .text('Certificado de Habilidad', { width: textBlockWidth, align: 'left', lineGap: 2 });
 
-  const y = doc.y + 6;               // ← línea más pegada al texto
-  doc
-    .moveTo(m.left, y)
-    .lineTo(doc.page.width - m.right, y)
-    .strokeColor('#000')
+  const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
+  doc.moveTo(leftMargin, lineY)
+    .lineTo(pageWidth - rightMargin, lineY)
     .lineWidth(1)
-    .stroke();
-
-  doc.moveDown(1.8);                 // ← ¡ESPACIO EXTRA!
-};
-
-/* dibuja linea subrayada desde fin del texto hasta margen derecho */
-const subrayar = (doc: PDFDoc, xIni: number, y: number) => {
-  const m = doc.page.margins;
-  doc
-    .moveTo(xIni, y + 12) // 12 px aprox por debajo de baseline
-    .lineTo(doc.page.width - m.right, y + 12)
-    .lineWidth(0.7)
     .strokeColor('#000')
     .stroke();
+
+  doc.y = lineY + 20;
 };
 
-/* cuerpo maquetado como en la imagen */
-const infoIngeniero = (doc: PDFDoc, ing: Ingeniero) => {
-  const m = doc.page.margins;
-  const x = m.left + 2;
-  const gap = 0.45;          // ← tamaño del salto entre líneas (en “moveDown”)
+const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
+  const leftMargin = doc.page.margins.left;
+  const rightMargin = doc.page.margins.right;
+  const pageWidth = doc.page.width;
+  const availableWidth = pageWidth - leftMargin - rightMargin;
+  const titulo = `CERTIFICADO DE ${tipo.toUpperCase()}`;
 
-  const draw = (label: string, val: string) => {
-    doc.font('Helvetica').text(label, x, doc.y, { continued: true });
-    const xVal = doc.x;
-    doc.font('Helvetica-Bold').text(val);
-    subrayar(doc, xVal, doc.y - 11);
-    doc.moveDown(gap);
-  };
+  doc.font('Helvetica-Bold')
+    .fontSize(14)
+    .fillColor('black')
+    .text(titulo, leftMargin, doc.y, { align: 'left', width: availableWidth, lineGap: 4 });
+  doc.moveDown(1);
+};
 
-  draw('El Ingeniero (a): ', `${ing.apellidos} ${ing.nombres}`.toUpperCase());
-  draw('Adscrito al Consejo Departamental de: ', ing.consejoDepartamental.toUpperCase());
+const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
+  const nombreCompleto = `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase();
+  const textoDescriptivo = 'El Ingeniero (a): ';
+  const initialX = doc.page.margins.left + 20;  
 
-  /* CIP  +  Fecha */
-  doc.font('Helvetica').text('Con Registro de Matrícula del CIP Nº: ', x, doc.y, { continued: true });
-  const xCip = doc.x;
-  doc.font('Helvetica-Bold').text(ing.registroCIP, { continued: true });
-  subrayar(doc, xCip, doc.y - 11);
-
-  doc.font('Helvetica').text('    Fecha de Incorporación: ', { continued: true });
-  const xF = doc.x;
-  doc.font('Helvetica-Bold').text(fechaNum(ing.fechaIncorporacion));
-  subrayar(doc, xF, doc.y - 11);
-  doc.moveDown(gap);
-
-  draw('Especialidad: ', ing.especialidad.toUpperCase());
-  doc.moveDown(gap + 0.3);   // ← más separación antes del párrafo legal
-
-
-  /* párrafo legal */
-  doc
-    .font('Helvetica')
+  doc.font('Helvetica')
     .fontSize(11)
-    .text(
-      'De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 ' +
-        'del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, ' +
-        'SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ' +
-        'ejercer la Profesión de Ingeniero (a).',
-      { lineGap: 2 }
-    )
-    .moveDown(0.8)
-    .font('Helvetica-Bold')
-    .text('ASUNTO')
-    .moveDown();
+    .fillColor('black')
+    .text(textoDescriptivo, initialX, doc.y);
+
+  doc.font('Helvetica-Bold')
+    .fillColor('black')
+    .text(nombreCompleto, initialX + doc.widthOfString(textoDescriptivo), doc.y);
+
+  doc.moveDown(1);
+
+  const consejo = ingeniero.consejoDepartamental.toUpperCase();
+  const textoConsejo = 'Adscrito al Consejo Departamental de: ';
+  const consejoX = doc.page.margins.left + 20;  
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text(textoConsejo, consejoX, doc.y);
+
+  doc.font('Helvetica-Bold')
+    .fillColor('black')
+    .text(consejo, consejoX + doc.widthOfString(textoConsejo), doc.y);
+
+  doc.moveDown(1);
+
+  const registro = ingeniero.registroCIP;
+  const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
+  const registroX = doc.page.margins.left + 20;  
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text(textoRegistro, registroX, doc.y);
+
+  doc.font('Helvetica-Bold')
+    .fillColor('black')
+    .text(registro, registroX + doc.widthOfString(textoRegistro), doc.y);
+
+  doc.moveDown(1);
+
+  const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
+  const textoFecha = 'Fecha de Incorporación: ';
+  const fechaX = doc.page.margins.left + 20;  
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text(textoFecha, fechaX, doc.y);
+
+  doc.font('Helvetica-Bold')
+    .fillColor('black')
+    .text(fechaInc, fechaX + doc.widthOfString(textoFecha), doc.y);
+
+  doc.moveDown(1);
+
+  const especialidad = ingeniero.especialidad.toUpperCase();
+  const textoEspecialidad = 'Especialidad: ';
+  const especialidadX = doc.page.margins.left + 20;  
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text(textoEspecialidad, especialidadX, doc.y);
+
+  doc.font('Helvetica-Bold')
+    .fillColor('black')
+    .text(especialidad, especialidadX + doc.widthOfString(textoEspecialidad), doc.y);
+
+  doc.moveDown(1);
 };
 
-/* vigencia */
-const vigencia = (doc: PDFDoc, fecha: Date) => {
-  const x = doc.page.margins.left + 2;
-  doc
-    .font('Helvetica-Bold')
-    .text('EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:', x)
-    .moveDown(0.2)
-    .text(`DÍA ${fecha.getDate().toString().padStart(2, '0')}`, x)
-    .moveDown();
-};
+const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
+  // --- 1. Generar QR ---------------------------------------------------------
+  const verificationUrl = `${process.env.FRONTEND_URL || ''}/certificados/verificar/${certificadoId}`;
+  const qrDataUrl      = await generarQR(verificationUrl);
+  const base64Data     = qrDataUrl.replace(/^data:image\/png;base64,/, '');
+  const qrBuffer       = Buffer.from(base64Data, 'base64');
 
-/* firma centrada + qr costado */
-const pieCertificado = async (doc: PDFDoc, id: string) => {
-  /* firma */
-  const ancho = 160;
-  const yFirma = doc.page.height - 140;
-  const xFirma = (doc.page.width - ancho) / 2;
-
-  doc
-    .font('Helvetica')
-    .fontSize(12)
-    .text('__________________________________', xFirma, yFirma, { width: ancho, align: 'center' })
-    .text('Ing. María del Carmen Ponce Mejía', xFirma, yFirma + 18, { width: ancho, align: 'center' })
-    .text('Decana Nacional', xFirma, yFirma + 36, { width: ancho, align: 'center' })
-    .text('Colegio de Ingenieros del Perú', xFirma, yFirma + 54, { width: ancho, align: 'center' });
-
-  /* QR */
+  // --- 2. Coordenadas: QR a la derecha ---------------------------------------
   const qrSize = 80;
-  // const qrX = doc.page.width - doc.page.margins.right - qrSize;   // lado derecho
-  const qrX = doc.page.margins.left;                            // ↖ descomenta para lado izquierdo
-  const qrY = doc.page.height - 160;
+  const qrX    = doc.page.width - doc.page.margins.right - qrSize;   // pegado al margen derecho
+  const qrY    = doc.page.height - 160;                              // misma altura que antes
 
-  doc.image(await qrData(`${process.env.FRONTEND_URL || ''}/certificados/verificar/${id}`), qrX, qrY, {
-    width: qrSize,
-    height: qrSize
-  });
-  doc
-    .font('Helvetica')
-    .fontSize(10)
-    .fillColor('#666')
-    .text(id, qrX, qrY + qrSize + 4, { width: qrSize, align: 'center' });
+  doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+
+  doc.font('Helvetica')
+     .fontSize(10)
+     .fillColor('#666')
+     .text(certificadoId, qrX, qrY + qrSize + 5, {
+       width: qrSize,
+       align: 'center',
+     });
+
+  // --- 3. Firma al centro ----------------------------------------------------
+  // --- Firma al centro (sin guiones) ---------------------------------
+const sealWidth = 200;
+const sealX     = (doc.page.width - sealWidth) / 2;
+const sealY     = doc.page.height - 140;     // donde empieza el bloque
+
+// Nombre de la autoridad
+doc.font('Helvetica')
+   .fontSize(12)
+   .text('Ing. María del Carmen Ponce Mejía',
+         sealX, sealY, { width: sealWidth, align: 'center' });
+
+// Línea de firma (vector)
+const lineY = sealY + 18;                    // ligeramente debajo del nombre
+doc.moveTo(sealX, lineY)
+   .lineTo(sealX + sealWidth, lineY)
+   .lineWidth(1)
+   .strokeColor('#000')
+   .stroke();
+
+// Cargo y entidad
+doc.text('Decana Nacional',
+         sealX, lineY + 10, { width: sealWidth, align: 'center' })
+   .text('Colegio de Ingenieros del Perú',
+         sealX, lineY + 30, { width: sealWidth, align: 'center' });
+}
+ 
+
+const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
+  doc.font('Helvetica')
+    .fontSize(11)
+    .fillColor('black')
+    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
+      align: 'left',
+      lineGap: 15
+    });
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('ASUNTO', {
+      align: 'left',
+      lineGap: 5
+    });
 };
-/* -------------------------------------- */
 
-/* ---------- export principal ---------- */
+const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text('EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:', {
+      align: 'left',
+      lineGap: 10
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor('black')
+    .text(`DÍA ${fechaVigencia.getDate().toString().padStart(2, '0')}`, {
+      align: 'left',
+      lineGap: 5
+    });
+};
+
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
   fechaVigencia: Date,
   certificadoId: string
-) => {
-  const ruta = path.join(tempDir, `certificado_habilidad_${Date.now()}.pdf`);
-  return crearPDF(ruta, async doc => {
+): Promise<string> => {
+  const pdfPath = path.join(tempDir, `certificado_habilidad_${Date.now()}.pdf`);
+
+  return generarPDF(pdfPath, async (doc) => {
     doc.info.Title = 'Certificado de Habilidad - CIP';
-    encabezado(doc);
-    infoIngeniero(doc, ingeniero);
-    vigencia(doc, fechaVigencia);
-    await pieCertificado(doc, certificadoId);
-  });
-};
-/* ------------------------------------------------ */
-export const generarPDFCertificadoHabilidadPorId = async (certificadoId: string) => {
-  const ruta = path.join(tempDir, `certificado_habilidad_${certificadoId}.pdf`);
-  return crearPDF(ruta, async doc => {
-    doc.info.Title = 'Certificado de Habilidad - CIP';
-    encabezado(doc);
-    doc.font('Helvetica').fontSize(12).text(`Certificado ID: ${certificadoId}`, { align: 'center' });
-    await pieCertificado(doc, certificadoId);
+    agregarEncabezado(doc);
+    agregarInformacionIngeniero(doc, ingeniero);
+    agregarSeccionServicioProfesional(doc);
+    agregarVigencia(doc, fechaVigencia);
+    await agregarPieCertificado(doc, certificadoId);
   });
 };
