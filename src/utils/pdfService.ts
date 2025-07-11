@@ -120,15 +120,6 @@ const agregarEncabezado = (doc: PDFDoc) => {
      .fillColor('red')                               // Cambiar color a rojo
      .text('Certificado de Habilidad', textX, lineY + 15, { width: textBlockWidth, align: 'center', lineGap: 2 });
 
-  // --- 3. Línea debajo del título (removida la de Habilitación) ---
-  doc.moveDown(1);                                  // Mover un poco hacia abajo
-
-  // Línea horizontal, eliminando la habilitación
-  doc.moveTo(leftMargin, doc.y + 10)
-     .lineTo(pageWidth - rightMargin, doc.y + 10)
-     .lineWidth(1)
-     .strokeColor('#000')
-     .stroke();
 };
 
 const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
