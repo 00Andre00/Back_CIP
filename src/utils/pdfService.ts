@@ -71,7 +71,6 @@ const generarPDF = (
   });
 };
 
-// --- Cambios en agregarEncabezado (modificado) -----------------------
 const agregarEncabezado = (doc: PDFDoc) => {
   const leftMargin = doc.page.margins.left;
   const rightMargin = doc.page.margins.right;
@@ -84,7 +83,7 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const gap = 2;
   const textBlockWidth = 300;
   const totalWidth = logoWidth + gap + textBlockWidth;
-  const startX = leftMargin;
+  const startX = leftMargin;  // Cambiar la posición del logo y texto para alinearlos a la izquierda.
 
   const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo2.png');
   if (fs.existsSync(logoPath)) {
@@ -100,26 +99,23 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const textBlockHeight = 52;
   const textY = headerY + (logoHeight - textBlockHeight) / 2;
 
-  // --- 1. "COLEGIO DE INGENIEROS DEL PERÚ" subrayado en rojo ---
   doc.font('Helvetica-Bold')
-     .fontSize(20)
-     .fillColor('red')                              // Cambiar color a rojo
-     .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'center', lineGap: 2 });
+    .fontSize(20)
+    .fillColor('black')
+    .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'center', lineGap: 2 });
+  doc.font('Helvetica-Bold')
+    .fontSize(14)
+    .fillColor('black')
+    .text('Certificado de Habilidad', { width: textBlockWidth, align: 'center', lineGap: 2 });
 
-  // Subrayar en rojo
-  const lineY = textY + 25;                          // Línea debajo del título
+  const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
   doc.moveTo(leftMargin, lineY)
-     .lineTo(pageWidth - rightMargin, lineY)
-     .lineWidth(1)
-     .strokeColor('red')
-     .stroke();
+    .lineTo(pageWidth - rightMargin, lineY)
+    .lineWidth(1)
+    .strokeColor('#000')
+    .stroke();
 
-  // --- 2. "Certificado de Habilidad" debajo, centrado y rojo ----
-  doc.font('Helvetica-Bold')
-     .fontSize(14)
-     .fillColor('red')                               // Cambiar color a rojo
-     .text('Certificado de Habilidad', textX, lineY + 15, { width: textBlockWidth, align: 'center', lineGap: 2 });
-
+  doc.y = lineY + 20;
 };
 
 const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
@@ -137,16 +133,16 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
 };
 
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
-  const left  = doc.page.margins.left;                 // margen izquierdo
-  const right = doc.page.width - doc.page.margins.right;
-  const fs    = 11;                                    // font-size base
-  const gap   = 5;                                     // hueco antes de la línea
-  const lineH = 0.7;                                   // grosor línea
-  const lineOffset = 2;                                // ↓ distancia línea-texto
+  const left = doc.page.margins.left;  // margen izquierdo
+  const right = doc.page.width - doc.page.margins.right;  // margen derecho
+  const fs = 11;  // font-size base
+  const gap = 5;   // hueco antes de la línea
+  const lineH = 0.7;  // grosor línea
+  const lineOffset = 2;  // ↓ distancia línea-texto
 
   /** Dibuja “Etiqueta: VALOR _____” con subrayado hasta el margen derecho */
   const drawField = (label: string, value: string) => {
-    const y = doc.y;                                   // coordenada actual
+    const y = doc.y;  // coordenada actual
 
     // Etiqueta
     doc.font('Helvetica').fontSize(fs).text(label, left, y);
@@ -161,12 +157,12 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
     const lineStart = valX + valW + gap;
     if (lineStart < right) {
       doc.moveTo(lineStart, y + fs + lineOffset)
-         .lineTo(right,      y + fs + lineOffset)
+         .lineTo(right, y + fs + lineOffset)
          .lineWidth(lineH)
          .strokeColor('#000')
          .stroke();
     }
-    doc.moveDown(1.3);                                 // espaciado vertical
+    doc.moveDown(1.3);  // espaciado vertical
   };
 
   // ——— 1. Encabezado ————————————————————————————
@@ -182,40 +178,50 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   const yBefore = doc.y;
 
   // • 1er campo: registro CIP
-  const label1  = 'Con Registro de Matrícula del CIP Nº: ';
+  const label1 = 'Con Registro de Matrícula del CIP Nº: ';
   doc.font('Helvetica').fontSize(fs).text(label1, left, yBefore);
   const label1W = doc.widthOfString(label1);
 
-  const val1    = ingeniero.registroCIP;
-  const val1X   = left + label1W;
+  const val1 = ingeniero.registroCIP;
+  const val1X = left + label1W;
   doc.font('Helvetica-Bold').text(val1, val1X, yBefore);
-  const val1W   = doc.widthOfString(val1);
+  const val1W = doc.widthOfString(val1);
 
-  const midX    = (right - left) * 0.58 + left;        // “columna” 2ª mitad
+  const midX = (right - left) * 0.58 + left;  // “columna” 2ª mitad
   doc.moveTo(val1X + val1W + gap, yBefore + fs + lineOffset)
-     .lineTo(midX - 10,            yBefore + fs + lineOffset)
+     .lineTo(midX - 10, yBefore + fs + lineOffset)
      .lineWidth(lineH)
      .stroke();
 
   // • 2º campo: fecha incorporación
-  const label2  = 'Fecha de Incorporación: ';
+  const label2 = 'Fecha de Incorporación: ';
   doc.font('Helvetica').fontSize(fs).text(label2, midX, yBefore);
   const label2W = doc.widthOfString(label2);
 
-  const val2    = formatearFechaNumerica(ingeniero.fechaIncorporacion);
-  const val2X   = midX + label2W;
+  const val2 = formatearFechaNumerica(ingeniero.fechaIncorporacion);
+  const val2X = midX + label2W;
   doc.font('Helvetica-Bold').text(val2, val2X, yBefore);
-  const val2W   = doc.widthOfString(val2);
+  const val2W = doc.widthOfString(val2);
 
   doc.moveTo(val2X + val2W + gap, yBefore + fs + lineOffset)
-     .lineTo(right,                yBefore + fs + lineOffset)
+     .lineTo(right, yBefore + fs + lineOffset)
      .lineWidth(lineH)
      .stroke();
 
   doc.moveDown(1.3);
 
-  // ——— 4. Especialidad ————————————————————————
-  drawField('Especialidad: ', ingeniero.especialidad.toUpperCase());
+  // ——— 4. Especialidad y Texto de la Ley a la par —————————
+  const leyText = 'De conformidad con la Ley No 28858, Ley que complementa a la Ley No 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).';
+  
+  // Posición inicial del texto de ley (alineado a la derecha de "Especialidad")
+  const especialidadX = left + doc.widthOfString('Especialidad: ');  // donde termina el campo "Especialidad"
+  
+  doc.font('Helvetica')
+     .fontSize(fs)
+     .fillColor('black')
+     .text(leyText, especialidadX, doc.y, { width: right - especialidadX, align: 'left' });
+
+  doc.moveDown(1);
 };
 
 const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
