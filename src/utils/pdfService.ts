@@ -168,7 +168,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
 
   // ——— 1. Encabezado ————————————————————————————
   doc.font('Helvetica').fontSize(fs)
-     .text('Los que suscriben certifican que:')
+     .text('Los que suscriben certifican que:',left,top)
      .moveDown(0.8);
 
   // ——— 2. Campos simples —————————————————————————
@@ -266,7 +266,7 @@ const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
   doc.font('Helvetica')
     .fontSize(11)
     .fillColor('black')
-    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).', {
+    .text('De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).',left, top, {
       align: 'left',
       lineGap: 15
     });
