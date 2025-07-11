@@ -316,37 +316,103 @@ const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
 };
 
 const agregarSeccionServicioProfesional = (doc: PDFDoc) => {
+  // Texto de servicio profesional
   doc
     .font("Helvetica")
     .fontSize(11)
     .fillColor("black")
     .text(
-      "De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).", doc.page.margins.left, doc.y);
-  doc.font("Helvetica-Bold").fontSize(11).fillColor("black").text("ASUNTO", {
-    align: "left",
-    lineGap: 5,
-  });
-};
+      "De conformidad con la Ley Nº 28858, Ley que complementa a la Ley Nº 16053 del Ejercicio Profesional y el Estatuto del Colegio de Ingenieros del Perú, SE ENCUENTRA COLEGIADO Y HÁBIL, en consecuencia está autorizado para ejercer la Profesión de Ingeniero (a).",
+      doc.page.margins.left,
+      doc.y
+    );
 
-const agregarVigencia = (doc: PDFDoc, fechaVigencia: Date) => {
-  doc
-    .font("Helvetica-Bold")
+  // Título "ASUNTO"
+  doc.font("Helvetica-Bold")
     .fontSize(11)
     .fillColor("black")
-    .text("EL PRESENTE DOCUMENTO TIENE VIGENCIA HÁBIL A:", {
-      align: "left",
-      lineGap: 10,
-    });
-
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .fillColor("black")
-    .text(`DÍA ${fechaVigencia.getDate().toString().padStart(2, "0")}`, {
+    .text("ASUNTO", {
       align: "left",
       lineGap: 5,
     });
+
+  // Agregar la nueva sección
+  doc.moveDown(1); // Para dar espacio entre el texto de "ASUNTO" y la nueva sección
+
+  // Nuevo campo: "Servicio Profesional"
+  doc
+    .font("Helvetica")
+    .fontSize(11)
+    .fillColor("black")
+    .text("Servicio Profesional: ", doc.page.margins.left, doc.y);
+  doc.font("Helvetica-Bold").text("Público y/o Privado", doc.x + 150, doc.y);
+
+  doc.moveDown(1); // Espacio entre campos
+
+  // Nuevo campo: "Entidad o Propietario"
+  doc
+    .font("Helvetica")
+    .fontSize(11)
+    .fillColor("black")
+    .text("Entidad o Propietario: ", doc.page.margins.left, doc.y);
+  doc.font("Helvetica-Bold").text("Público y/o Privado", doc.x + 150, doc.y);
+
+  doc.moveDown(1); // Espacio entre campos
+
+  // Nuevo campo: "Lugar"
+  doc
+    .font("Helvetica")
+    .fontSize(11)
+    .fillColor("black")
+    .text("Lugar: ", doc.page.margins.left, doc.y);
+  doc.font("Helvetica-Bold").text("A nivel nacional", doc.x + 150, doc.y);
 };
+const agregarVigenciaYUbicacion = (doc: PDFDoc, fechaGeneracion: Date) => {
+  const left = doc.page.margins.left;
+  const right = doc.page.width - doc.page.margins.right;
+
+  // Título: "El presente Documento tiene vigencia hasta"
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(12)
+    .fillColor("black")
+    .text("El presente Documento tiene vigencia hasta", left, doc.y)
+    .moveDown(1); // Deja un espacio
+
+  // Calcular la fecha de vigencia (sumar un año a la fecha de generación)
+  const fechaVigencia = new Date(fechaGeneracion);
+  fechaVigencia.setFullYear(fechaVigencia.getFullYear() + 1);
+
+  // Extraer día, mes y año de la fecha de vigencia
+  const diaVigencia = fechaVigencia.getDate().toString().padStart(2, '0');
+  const mesVigencia = fechaVigencia.getMonth() + 1; // Los meses en JavaScript son de 0 a 11
+  const añoVigencia = fechaVigencia.getFullYear();
+
+  // Mostrar la fecha de vigencia en el formato: DIA MES AÑO
+  doc.font("Helvetica")
+    .fontSize(11)
+    .fillColor("black")
+    .text(`${diaVigencia}       ${mesVigencia.toString().padStart(2, '0')}       ${añoVigencia}`, left, doc.y)
+    .moveDown(2); // Deja espacio entre la vigencia y el siguiente bloque
+
+  // Agregar el texto "Huánuco DIA de MES DEL 2025" alineado a la derecha
+  const fechaHoy = new Date();
+  const diaHoy = fechaHoy.getDate().toString().padStart(2, '0');
+  const mesHoy = fechaHoy.getMonth() + 1; // Los meses en JavaScript son de 0 a 11
+  const añoHoy = fechaHoy.getFullYear();
+
+  doc.font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor("black")
+    .text(
+      `Huánuco ${diaHoy} de ${mesHoy.toString().padStart(2, '0')} del ${añoHoy}`,
+      right - 200, // Ajuste la posición horizontal a la derecha
+      doc.y
+    );
+};
+
+
+
 
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
@@ -360,7 +426,7 @@ export const generarPDFCertificadoHabilidad = async (
     agregarEncabezado(doc);
     agregarInformacionIngeniero(doc, ingeniero);
     agregarSeccionServicioProfesional(doc);
-    agregarVigencia(doc, fechaVigencia);
+    
     await agregarPieCertificado(doc, certificadoId);
   });
 };
