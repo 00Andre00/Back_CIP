@@ -412,8 +412,6 @@ const agregarVigenciaYUbicacion = (doc: PDFDoc, fechaGeneracion: Date) => {
 };
 
 
-
-
 export const generarPDFCertificadoHabilidad = async (
   ingeniero: Ingeniero,
   fechaVigencia: Date,
@@ -426,7 +424,8 @@ export const generarPDFCertificadoHabilidad = async (
     agregarEncabezado(doc);
     agregarInformacionIngeniero(doc, ingeniero);
     agregarSeccionServicioProfesional(doc);
-    
+    agregarVigenciaYUbicacion(doc, new Date());
+    agregarTituloCertificado(doc, "habilidad");
     await agregarPieCertificado(doc, certificadoId);
   });
 };
