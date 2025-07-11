@@ -71,6 +71,7 @@ const generarPDF = (
   });
 };
 
+// --- Cambios en agregarEncabezado (modificado) -----------------------
 const agregarEncabezado = (doc: PDFDoc) => {
   const leftMargin = doc.page.margins.left;
   const rightMargin = doc.page.margins.right;
@@ -83,7 +84,7 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const gap = 2;
   const textBlockWidth = 300;
   const totalWidth = logoWidth + gap + textBlockWidth;
-  const startX = leftMargin;  // Cambiar la posición del logo y texto para alinearlos a la izquierda.
+  const startX = leftMargin;
 
   const logoPath = path.join(process.cwd(), 'src', 'assets', 'logo2.png');
   if (fs.existsSync(logoPath)) {
@@ -99,23 +100,35 @@ const agregarEncabezado = (doc: PDFDoc) => {
   const textBlockHeight = 52;
   const textY = headerY + (logoHeight - textBlockHeight) / 2;
 
+  // --- 1. "COLEGIO DE INGENIEROS DEL PERÚ" subrayado en rojo ---
   doc.font('Helvetica-Bold')
-    .fontSize(20)
-    .fillColor('black')
-    .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'left', lineGap: 2 });
-  doc.font('Helvetica-Bold')
-    .fontSize(14)
-    .fillColor('black')
-    .text('Certificado de Habilidad', { width: textBlockWidth, align: 'left', lineGap: 2 });
+     .fontSize(20)
+     .fillColor('red')                              // Cambiar color a rojo
+     .text('COLEGIO DE INGENIEROS DEL PERÚ', textX, textY, { width: textBlockWidth, align: 'center', lineGap: 2 });
 
-  const lineY = headerY + Math.max(logoHeight, doc.y - headerY) + 10;
+  // Subrayar en rojo
+  const lineY = textY + 25;                          // Línea debajo del título
   doc.moveTo(leftMargin, lineY)
-    .lineTo(pageWidth - rightMargin, lineY)
-    .lineWidth(1)
-    .strokeColor('#000')
-    .stroke();
+     .lineTo(pageWidth - rightMargin, lineY)
+     .lineWidth(1)
+     .strokeColor('red')
+     .stroke();
 
-  doc.y = lineY + 20;
+  // --- 2. "Certificado de Habilidad" debajo, centrado y rojo ----
+  doc.font('Helvetica-Bold')
+     .fontSize(14)
+     .fillColor('red')                               // Cambiar color a rojo
+     .text('Certificado de Habilidad', textX, lineY + 15, { width: textBlockWidth, align: 'center', lineGap: 2 });
+
+  // --- 3. Línea debajo del título (removida la de Habilitación) ---
+  doc.moveDown(1);                                  // Mover un poco hacia abajo
+
+  // Línea horizontal, eliminando la habilitación
+  doc.moveTo(leftMargin, doc.y + 10)
+     .lineTo(pageWidth - rightMargin, doc.y + 10)
+     .lineWidth(1)
+     .strokeColor('#000')
+     .stroke();
 };
 
 const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
