@@ -170,6 +170,8 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   const lineH = 0.7; // grosor línea
   const lineOffset = 0; // ↓ distancia línea-texto
 
+  const top = doc.y; // Usa doc.y para obtener la posición vertical actual
+
   /** Dibuja “Etiqueta: VALOR _____” con subrayado hasta el margen derecho */
   const drawField = (label: string, value: string) => {
     const y = doc.y; // coordenada actual
@@ -200,7 +202,7 @@ const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
   doc
     .font("Helvetica")
     .fontSize(fs)
-    .text("Los que suscriben certifican que:", left, top)
+    .text("Los que suscriben certifican que:", left, top) // Usar top que ahora está definido
     .moveDown(0.8);
 
   // ——— 2. Campos simples —————————————————————————
