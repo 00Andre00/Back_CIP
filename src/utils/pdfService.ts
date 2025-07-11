@@ -133,76 +133,85 @@ const agregarTituloCertificado = (doc: PDFDoc, tipo: string) => {
 };
 
 const agregarInformacionIngeniero = (doc: PDFDoc, ingeniero: Ingeniero) => {
-  const nombreCompleto = `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase();
-  const textoDescriptivo = 'El Ingeniero (a): ';
-  const initialX = doc.page.margins.left + 20;  
+  const left  = doc.page.margins.left;                 // margen izquierdo
+  const right = doc.page.width - doc.page.margins.right;
+  const fs    = 11;                                    // font-size base
+  const gap   = 5;                                     // hueco antes de la línea
+  const lineH = 0.7;                                   // grosor línea
+  const lineOffset = 2;                                // ↓ distancia línea-texto
 
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text(textoDescriptivo, initialX, doc.y);
+  /** Dibuja “Etiqueta: VALOR _____” con subrayado hasta el margen derecho */
+  const drawField = (label: string, value: string) => {
+    const y = doc.y;                                   // coordenada actual
 
-  doc.font('Helvetica-Bold')
-    .fillColor('black')
-    .text(nombreCompleto, initialX + doc.widthOfString(textoDescriptivo), doc.y);
+    // Etiqueta
+    doc.font('Helvetica').fontSize(fs).text(label, left, y);
+    const labelW = doc.widthOfString(label);
 
-  doc.moveDown(1);
+    // Valor en negrita
+    const valX = left + labelW;
+    doc.font('Helvetica-Bold').text(value, valX, y);
+    const valW = doc.widthOfString(value);
 
-  const consejo = ingeniero.consejoDepartamental.toUpperCase();
-  const textoConsejo = 'Adscrito al Consejo Departamental de: ';
-  const consejoX = doc.page.margins.left + 20;  
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text(textoConsejo, consejoX, doc.y);
+    // Línea de relleno
+    const lineStart = valX + valW + gap;
+    if (lineStart < right) {
+      doc.moveTo(lineStart, y + fs + lineOffset)
+         .lineTo(right,      y + fs + lineOffset)
+         .lineWidth(lineH)
+         .strokeColor('#000')
+         .stroke();
+    }
+    doc.moveDown(1.3);                                 // espaciado vertical
+  };
 
-  doc.font('Helvetica-Bold')
-    .fillColor('black')
-    .text(consejo, consejoX + doc.widthOfString(textoConsejo), doc.y);
+  // ——— 1. Encabezado ————————————————————————————
+  doc.font('Helvetica').fontSize(fs)
+     .text('Los que suscriben certifican que:')
+     .moveDown(0.8);
 
-  doc.moveDown(1);
+  // ——— 2. Campos simples —————————————————————————
+  drawField('El Ingeniero (a): ', `${ingeniero.apellidos} ${ingeniero.nombres}`.toUpperCase());
+  drawField('Adscrito al Consejo Departamental de: ', ingeniero.consejoDepartamental.toUpperCase());
 
-  const registro = ingeniero.registroCIP;
-  const textoRegistro = 'Con Registro de Matrícula del CIP Nº. ';
-  const registroX = doc.page.margins.left + 20;  
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text(textoRegistro, registroX, doc.y);
+  // ——— 3. Línea con DOBLE campo (registro + fecha) —
+  const yBefore = doc.y;
 
-  doc.font('Helvetica-Bold')
-    .fillColor('black')
-    .text(registro, registroX + doc.widthOfString(textoRegistro), doc.y);
+  // • 1er campo: registro CIP
+  const label1  = 'Con Registro de Matrícula del CIP Nº: ';
+  doc.font('Helvetica').fontSize(fs).text(label1, left, yBefore);
+  const label1W = doc.widthOfString(label1);
 
-  doc.moveDown(1);
+  const val1    = ingeniero.registroCIP;
+  const val1X   = left + label1W;
+  doc.font('Helvetica-Bold').text(val1, val1X, yBefore);
+  const val1W   = doc.widthOfString(val1);
 
-  const fechaInc = formatearFechaNumerica(ingeniero.fechaIncorporacion);
-  const textoFecha = 'Fecha de Incorporación: ';
-  const fechaX = doc.page.margins.left + 20;  
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text(textoFecha, fechaX, doc.y);
+  const midX    = (right - left) * 0.58 + left;        // “columna” 2ª mitad
+  doc.moveTo(val1X + val1W + gap, yBefore + fs + lineOffset)
+     .lineTo(midX - 10,            yBefore + fs + lineOffset)
+     .lineWidth(lineH)
+     .stroke();
 
-  doc.font('Helvetica-Bold')
-    .fillColor('black')
-    .text(fechaInc, fechaX + doc.widthOfString(textoFecha), doc.y);
+  // • 2º campo: fecha incorporación
+  const label2  = 'Fecha de Incorporación: ';
+  doc.font('Helvetica').fontSize(fs).text(label2, midX, yBefore);
+  const label2W = doc.widthOfString(label2);
 
-  doc.moveDown(1);
+  const val2    = formatearFechaNumerica(ingeniero.fechaIncorporacion);
+  const val2X   = midX + label2W;
+  doc.font('Helvetica-Bold').text(val2, val2X, yBefore);
+  const val2W   = doc.widthOfString(val2);
 
-  const especialidad = ingeniero.especialidad.toUpperCase();
-  const textoEspecialidad = 'Especialidad: ';
-  const especialidadX = doc.page.margins.left + 20;  
-  doc.font('Helvetica')
-    .fontSize(11)
-    .fillColor('black')
-    .text(textoEspecialidad, especialidadX, doc.y);
+  doc.moveTo(val2X + val2W + gap, yBefore + fs + lineOffset)
+     .lineTo(right,                yBefore + fs + lineOffset)
+     .lineWidth(lineH)
+     .stroke();
 
-  doc.font('Helvetica-Bold')
-    .fillColor('black')
-    .text(especialidad, especialidadX + doc.widthOfString(textoEspecialidad), doc.y);
+  doc.moveDown(1.3);
 
-  doc.moveDown(1);
+  // ——— 4. Especialidad ————————————————————————
+  drawField('Especialidad: ', ingeniero.especialidad.toUpperCase());
 };
 
 const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
@@ -227,31 +236,27 @@ const agregarPieCertificado = async (doc: PDFDoc, certificadoId: string) => {
        align: 'center',
      });
 
-  // --- 3. Firma al centro ----------------------------------------------------
-  // --- Firma al centro (sin guiones) ---------------------------------
+ // --- Firma al centro (modificada) --------------------------
 const sealWidth = 200;
 const sealX     = (doc.page.width - sealWidth) / 2;
 const sealY     = doc.page.height - 140;     // donde empieza el bloque
 
-// Nombre de la autoridad
-doc.font('Helvetica')
-   .fontSize(12)
-   .text('Ing. María del Carmen Ponce Mejía',
-         sealX, sealY, { width: sealWidth, align: 'center' });
-
-// Línea de firma (vector)
-const lineY = sealY + 18;                    // ligeramente debajo del nombre
-doc.moveTo(sealX, lineY)
-   .lineTo(sealX + sealWidth, lineY)
+// Línea de firma (vector) (ahora encima del nombre)
+const lineY = sealY - 10;                    // ajustamos la línea un poco arriba
+doc.moveTo(sealX, lineY)                     // coloca la línea en "lineY"
+   .lineTo(sealX + sealWidth, lineY)         // línea de izquierda a derecha
    .lineWidth(1)
    .strokeColor('#000')
    .stroke();
 
+// Nombre de la autoridad (ahora va debajo de la línea)
+doc.font('Helvetica')
+   .fontSize(12)
+   .text('Ing. María del Carmen Ponce Mejía', sealX, lineY + 10, { width: sealWidth, align: 'center' });
+
 // Cargo y entidad
-doc.text('Decana Nacional',
-         sealX, lineY + 10, { width: sealWidth, align: 'center' })
-   .text('Colegio de Ingenieros del Perú',
-         sealX, lineY + 30, { width: sealWidth, align: 'center' });
+doc.text('Decana Nacional', sealX, lineY + 30, { width: sealWidth, align: 'center' })
+   .text('Colegio de Ingenieros del Perú', sealX, lineY + 50, { width: sealWidth, align: 'center' });
 }
  
 
