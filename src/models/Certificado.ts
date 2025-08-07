@@ -1,79 +1,66 @@
+// models/Certificado.ts
+import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IIngeniero {
-  nombre: string;
-  apellido: string;
-  registroCIP: string;
-  fechaIncorporacion: Date;
-  consejoDepartamental: string;
-  especialidad: string;
-}
-
-import { Schema, model, Document } from 'mongoose';
-
-/**
- * Interfaz que define la estructura de un certificado de habilitación para ingenieros.
- */
 export interface ICertificado extends Document {
-  tipo: 'habilidad'; // Solo para certificados de habilidad
-  fechaEmision: Date;
-
-  nombres: string;
-  apellidos: string;
-  numeroCIP: string; // Número de CIP del ingeniero
-  cedulaIdentidad: string; // Cédula de identidad del ingeniero
-  email: string; // Email del ingeniero
-  telefono: string; // Teléfono del ingeniero
-  celular: string; // Celular del ingeniero
-  direccion: string; // Dirección del ingenier
-
-  pagado: boolean;
-  estadoPago: 'pendiente' | 'pagado' | 'rechazado'; // Estado del pago del certificado
-  registroCIP: string; // Número de registro del CIP
-  fechaIncorporacion: Date; // Fecha de incorporación al Colegio
-  consejoDepartamental: string; // Consejo departamental al que pertenece
-  especialidad: string; // Especialidad del ingeniero
-  fechaVigencia: Date; // Fecha de vigencia del certificado (generalmente 1 año)
+  afiliado: mongoose.Types.ObjectId;
+  preferenceId: string;
+  pagoId?: string;
+  estado: 'pendiente' | 'pagado' | 'cancelado';
+  precio: number;
+  tipoPago: 'certificado';
+  fechaCreacion: Date;
+  fechaPago?: Date;
+  fechaVigencia?: Date;
 }
 
-const certificadoSchema = new Schema<ICertificado>({
-  tipo: { 
-    type: String, 
-    required: true, 
-    enum: ['habilidad'] // Solo tipo habilidad para ingenieros
+const CertificadoSchema = new Schema<ICertificado>({
+  afiliado: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Afiliado',
+    required: true
   },
-  fechaEmision: { 
-    type: Date, 
-    default: Date.now 
+  preferenceId: {
+    type: String,
+    required: true,
+    unique: true
   },
-  pagado: { 
-    type: Boolean, 
-    default: false 
+  pagoId: {
+    type: String,
+    default: null
   },
-  estadoPago: { 
-    type: String, 
-    enum: ['pendiente', 'pagado', 'rechazado'], 
-    default: 'pendiente' 
+  estado: {
+    type: String,
+    enum: ['pendiente', 'pagado', 'cancelado'],
+    default: 'pendiente'
   },
-  registroCIP: { 
-    type: String, 
-    required: true 
+  precio: {
+    type: Number,
+    required: true,
+    default: 15.00
   },
-  fechaIncorporacion: { 
-    type: Date, 
-    required: true 
+  tipoPago: {
+    type: String,
+    default: 'certificado'
   },
-  consejoDepartamental: { 
-    type: String, 
-    required: true 
+  fechaCreacion: {
+    type: Date,
+    default: Date.now
   },
-  especialidad: { 
-    type: String, 
-    required: true 
+  fechaPago: {
+    type: Date,
+    default: null
   },
-  fechaVigencia: { 
-    type: Date, 
-    required: true 
+  fechaVigencia: {
+    type: Date,
+    default: null
   }
+}, {
+  timestamps: true
 });
 
-export default model<ICertificado>('Certificado', certificadoSchema);
+// Índices para optimizar consultas
+CertificadoSchema.index({ preferenceId: 1 });
+CertificadoSchema.index({ pagoId: 1 });
+CertificadoSchema.index({ afiliado: 1, estado: 1 });
+
+export default mongoose.model<ICertificado>('Certificado', CertificadoSchema);
