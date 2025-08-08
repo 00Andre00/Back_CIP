@@ -1,41 +1,44 @@
-import express from 'express';
-import { 
-  crearAfiliado, 
-    obtenerAfiliados, 
-    obtenerAfiliadoPorId,
-    obtenerAfiliadoPorCIP,
-    actualizarInfoAfiliacion,
-    eliminarAfiliado,
-    verificarCipExistente
+// nombre: afiliadoRoutes.ts
+import { Router } from 'express';
+import {
+  crearAfiliado,
+  obtenerAfiliados,
+  obtenerAfiliadoPorId,
+  obtenerAfiliadoPorCIP,
+  actualizarInfoAfiliacion,
+  eliminarAfiliado,
+  verificarCipExistente,
+  crearMensualidadesAfiliado,
+  actualizarMensualidad,
 } from '../controllers/afiliadoController';
 
-const router = express.Router();
+const router = Router();
 
-import {
-    crearPreferenciaAfiliado,
-    verificarPagoAfiliado,
-    obtenerEstadoPagoAfiliado,
-    webhookPagoAfiliado,
-    reservarPago
-} from '../controllers/pagoController';
+// Verificar CIP
+router.get('/verificar-cip/:cip', verificarCipExistente);
 
-router.get('/check/:cip', verificarCipExistente);
-
-// Ruta para crear preferencia de pago para afiliados
-router.post('/create_preference', crearPreferenciaAfiliado);
-// Ruta para verificar pago de afiliados
-router.get('/verificar-pago', verificarPagoAfiliado);
-// Ruta para obtener estado de pago de un afiliado
-router.get('/:afiliadoId/estado-pago', obtenerEstadoPagoAfiliado);
-// In your routes file
-router.post('/webhook-pago', webhookPagoAfiliado);
-router.post('/reservar-pago', reservarPago);
-
+// Crear afiliado
 router.post('/', crearAfiliado);
+
+// Obtener todos los afiliados
 router.get('/', obtenerAfiliados);
-router.get('/cip/:cipNumero', obtenerAfiliadoPorCIP);
+
+// Obtener afiliado por ID
 router.get('/:id', obtenerAfiliadoPorId);
-router.put('/:id', actualizarInfoAfiliacion);
+
+// Obtener afiliado por CIP
+router.get('/cip/:cipNumero', obtenerAfiliadoPorCIP);
+
+// Actualizar información de afiliación
+router.put('/:id/info-afiliacion', actualizarInfoAfiliacion);
+
+// Eliminar afiliado
 router.delete('/:id', eliminarAfiliado);
+
+// Crear mensualidades para un afiliado
+router.post('/:id/mensualidades', crearMensualidadesAfiliado);
+
+// Actualizar estado de una mensualidad
+router.put('/mensualidades/:mensualidadId', actualizarMensualidad);
 
 export default router;

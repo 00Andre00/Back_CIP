@@ -1,21 +1,28 @@
-// nombre de archivo : pagoRoutes.ts
-import express from 'express';
+// nombre: pagoRoutes.ts
+import { Router } from 'express';
 import {
-    crearPreferenciaAfiliado,
-    verificarPagoAfiliado,
-    obtenerEstadoPagoAfiliado
+  crearPreferenciaAfiliado,
+  verificarPagoAfiliado,
+  obtenerEstadoPagoAfiliado,
+  webhookPagoAfiliado,
+  reservarPago,
 } from '../controllers/pagoController';
-import { arch } from 'os';
 
-const router = express.Router();
+const router = Router();
 
-// Ruta para crear preferencia de pago para afiliados
+// Crear preferencia de pago para afiliados
 router.post('/create_preference', crearPreferenciaAfiliado);
 
-// Ruta para verificar pago de afiliados
+// Verificar pago de afiliados
 router.get('/verificar-pago', verificarPagoAfiliado);
 
-// Ruta para obtener estado de pago de un afiliado
+// Obtener estado de pago de un afiliado
 router.get('/:afiliadoId/estado-pago', obtenerEstadoPagoAfiliado);
+
+// Webhook de MercadoPago para pagos de afiliados
+router.post('/webhook-pago', webhookPagoAfiliado);
+
+// Reservar pago de afiliados
+router.post('/reservar-pago', reservarPago);
 
 export default router;
