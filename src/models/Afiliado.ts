@@ -32,6 +32,7 @@ const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>(
   correo: {
     type: String,
     required: true,
+    unique: true, // ✅ Agregar unique también al correo
     validate: {
       validator: function (v: string): boolean {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -59,35 +60,55 @@ const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>(
     validate: {
       validator: function (v: Date): boolean {
         const now = new Date();
-        return v <= new Date(now.getFullYear(), now.getMonth() + 1, 0); // No futura más allá del mes actual
+        // ✅ Permitir fechas desde 2 años atrás hasta 1 mes futuro
+        const minFecha = new Date(now.getFullYear() - 2, 0, 1);
+        const maxFecha = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return v >= minFecha && v <= maxFecha;
       },
-      message: 'La fecha de inicio de pago no puede ser posterior al mes actual.',
+      message: 'La fecha de inicio de pago debe estar entre 2 años atrás y el próximo mes.',
     },
   },
   fechaInicioMensualidades: {
-    // NUEVO CAMPO
+    // ✅ VALIDACIÓN CORREGIDA
     type: Date,
     required: true,
     validate: {
       validator: function (v: Date): boolean {
         const now = new Date();
-        return v <= new Date(now.getFullYear(), now.getMonth() + 7, 0); // Permitir hasta 6 meses futuros
+        // Permitir fechas desde 2 años atrás hasta 6 meses futuros
+        const minFecha = new Date(now.getFullYear() - 2, 0, 1);
+        const maxFecha = new Date(now.getFullYear(), now.getMonth() + 6, 0);
+        return v >= minFecha && v <= maxFecha;
       },
-      message: 'La fecha de inicio de mensualidades no puede ser posterior a 6 meses desde ahora.',
+      message: 'La fecha de inicio de mensualidades debe estar entre 2 años atrás y 6 meses futuros.',
     },
   },
   estadoPago: {
     type: String,
-    enum: ['al_dia', 'pendiente', 'inactivo'],
-    default: 'pendiente',
+    enum: ['Pendiente', 'Al día', 'Suspendido'], // ✅ Cambiado 'Habilitado' por 'Al día' para consistencia
+    default: 'Pendiente',
   },
   mesesAdeudados: { type: Number, default: 0 },
   ultimoMesPagado: { type: Date, default: null },
+}, {
+  timestamps: true // ✅ Agregar timestamps automáticos
 });
 
-// Índices para optimizar consultas
-afiliadoSchema.index({ cipNumero: 1 }, { unique: true });
-afiliadoSchema.index({ dni: 1 }, { unique: true });
+// ✅ Índices optimizados (sin redundancia)
+afiliadoSchema.index({ cipNumero: 1 });
+afiliadoSchema.index({ dni: 1 });
+afiliadoSchema.index({ correo: 1 });
+afiliadoSchema.index({ estadoPago: 1 });
+
+// ✅ Middleware pre-save para validaciones adicionales
+afiliadoSchema.pre('save', function(next) {
+  // Validar que fechaInicioMensualidades no sea anterior a fechaInicioPago
+  if (this.fechaInicioMensualidades < this.fechaInicioPago) {
+    const error = new Error('La fecha de inicio de mensualidades no puede ser anterior a la fecha de inicio de pago');
+    return next(error);
+  }
+  next();
+});
 
 const Afiliado = mongoose.model<IAfiliadoDocument>('Afiliado', afiliadoSchema);
 
