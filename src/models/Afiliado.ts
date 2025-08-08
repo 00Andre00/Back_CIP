@@ -78,8 +78,8 @@ const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>(
   },
   estadoPago: {
     type: String,
-    enum: ['Pendiente', 'Habilitado', 'Suspendido'],
-    default: 'Pendiente',
+    enum: ['al_dia', 'pendiente', 'inactivo'],
+    default: 'pendiente',
   },
   mesesAdeudados: { type: Number, default: 0 },
   ultimoMesPagado: { type: Date, default: null },
