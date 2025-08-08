@@ -77,7 +77,7 @@ const afiliadoSchema: Schema<IAfiliadoDocument> = new Schema<IAfiliadoDocument>(
         const now = new Date();
         // Permitir fechas desde 2 años atrás hasta 6 meses futuros
         const minFecha = new Date(now.getFullYear() - 2, 0, 1);
-        const maxFecha = new Date(now.getFullYear(), now.getMonth() + 6, 0);
+        const maxFecha = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         return v >= minFecha && v <= maxFecha;
       },
       message: 'La fecha de inicio de mensualidades debe estar entre 2 años atrás y 6 meses futuros.',
