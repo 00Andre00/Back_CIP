@@ -7,7 +7,6 @@ import bodyParser from 'body-parser';
 import usuarioNormalRoutes from './routes/usuarioNormalRoutes';
 import cors from 'cors'; // Importa cors
 import pagoRoutes from './routes/pagoRoutes';  
-import mensualidadRoutes from './routes/mensualidadRoutes';
 
 
 import certificadoRoutes from './routes/certificadoRoutes';
@@ -26,7 +25,7 @@ const app = express();
 
 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'https://cip.sistemasudh.com',
+  origin: process.env.FRONTEND_URL || 'http://cip.sistemasudh.com',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204,
@@ -61,7 +60,6 @@ app.use('/api/pagos', pagoRoutes);
 
 
 app.use('/api/certificados', certificadoRoutes);
-app.use('/api/mensualidades', mensualidadRoutes);
 
 
 
