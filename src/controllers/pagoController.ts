@@ -88,14 +88,12 @@ export const crearPreferenciaAfiliado = async (req: Request, res: Response): Pro
     const preference = new Preference(client);
     const result = await preference.create({ body });
 
-    console.log('Resultado de creación de preferencia:', result);
-
     const nuevoPago = new PagoAfiliado({
       afiliado: afiliadoId,
       mesesPagados: mesesPagadosFormateados,
       preferenceId: result.id,
       estado: 'pendiente',
-      montoTotal: Number(quantity) * Number(price), // ✅ CORREGIDO: Ahora funciona porque el campo existe
+      montoTotal: Number(quantity) * Number(price),
     });
     await nuevoPago.save();
 
@@ -116,14 +114,10 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
   try {
     const { payment_id, status, preference_id } = req.query;
 
-    console.log('Verificando pago:', { payment_id, status, preference_id });
-
     if (status === 'approved' && preference_id) {
       const pagoPendiente = await PagoAfiliado.findOne({ preferenceId: preference_id }).populate('afiliado');
 
       if (pagoPendiente) {
-        console.log('Pago encontrado:', pagoPendiente._id);
-        
         pagoPendiente.estado = 'pagado';
         pagoPendiente.pagoId = payment_id as string;
         pagoPendiente.fechaPago = new Date();
@@ -133,10 +127,7 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
         if (afiliado) {
           const mesesPagados = pagoPendiente.mesesPagados.map((fecha) => new Date(fecha));
           const fechaMasReciente = new Date(Math.max(...mesesPagados.map((fecha) => fecha.getTime())));
-          
           afiliado.ultimoMesPagado = fechaMasReciente;
-          
-          // ✅ CORREGIDO: Usar la función del afiliadoController
           const datosCalculados = calcularEstadoYMesesAdeudados(afiliado);
           afiliado.estadoPago = datosCalculados.estadoPago;
           afiliado.mesesAdeudados = datosCalculados.mesesAdeudados;
@@ -152,21 +143,13 @@ export const verificarPagoAfiliado = async (req: Request, res: Response): Promis
               { upsert: true }
             );
           }
-
-          console.log('Afiliado actualizado:', {
-            id: afiliado._id,
-            estadoPago: afiliado.estadoPago,
-            ultimoMesPagado: afiliado.ultimoMesPagado
-          });
         }
 
         res.redirect(`${process.env.FRONTEND_URL}?status=success`);
       } else {
-        console.log('Pago no encontrado para preference_id:', preference_id);
         res.redirect(`${process.env.FRONTEND_URL}?status=error`);
       }
     } else {
-      console.log('Pago no aprobado o datos incompletos');
       res.redirect(`${process.env.FRONTEND_URL}?status=error`);
     }
   } catch (error) {
@@ -218,65 +201,50 @@ export const webhookPagoAfiliado = async (req: Request, res: Response): Promise<
       console.log('Detalles del pago:', {
         id: paymentDetails.id,
         status: paymentDetails.status,
-        // ✅ CORREGIDO: Acceder correctamente al metadata
-        afiliadoId: paymentDetails.metadata?.afiliadoId,
+        preferenceId: paymentDetails.metadata?.preference_id,
       });
 
       if (paymentDetails.status === 'approved') {
-        // ✅ CORREGIDO: Buscar usando el afiliadoId del metadata
-        const afiliadoId = paymentDetails.metadata?.afiliadoId;
-        
-        if (afiliadoId) {
-          const pagoPendiente = await PagoAfiliado.findOne({
-            afiliado: afiliadoId,
-            estado: 'pendiente',
-          }).sort({ fechaCreacion: -1 }); // Obtener el más reciente
+        const pagoPendiente = await PagoAfiliado.findOne({
+          preferenceId: paymentDetails.metadata.preference_id,
+          estado: 'pendiente',
+        }).populate('afiliado');
 
-          if (pagoPendiente) {
-            console.log('Pago pendiente encontrado:', {
-              id: pagoPendiente._id,
-              afiliadoId: pagoPendiente.afiliado,
-              mesesPagados: pagoPendiente.mesesPagados,
-            });
+        if (pagoPendiente) {
+          console.log('Pago pendiente encontrado:', {
+            id: pagoPendiente._id,
+            afiliadoId: pagoPendiente.afiliado,
+            mesesPagados: pagoPendiente.mesesPagados,
+          });
 
-            pagoPendiente.estado = 'pagado';
-            pagoPendiente.pagoId = paymentId.toString();
-            pagoPendiente.fechaPago = new Date();
-            await pagoPendiente.save();
+          pagoPendiente.estado = 'pagado';
+          pagoPendiente.pagoId = paymentId;
+          pagoPendiente.fechaPago = new Date();
+          await pagoPendiente.save();
 
-            const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
-            if (afiliado) {
-              const mesesPagados = pagoPendiente.mesesPagados.map((fecha) => new Date(fecha));
-              const fechaMasReciente = new Date(Math.max(...mesesPagados.map((fecha) => fecha.getTime())));
-              
-              afiliado.ultimoMesPagado = fechaMasReciente;
-              const datosCalculados = calcularEstadoYMesesAdeudados(afiliado);
-              afiliado.estadoPago = datosCalculados.estadoPago;
-              afiliado.mesesAdeudados = datosCalculados.mesesAdeudados;
-              await afiliado.save();
+          const afiliado = await Afiliado.findById(pagoPendiente.afiliado);
+          if (afiliado) {
+            const mesesPagados = pagoPendiente.mesesPagados.map((fecha) => new Date(fecha));
+            const fechaMasReciente = new Date(Math.max(...mesesPagados.map((fecha) => fecha.getTime())));
+            afiliado.ultimoMesPagado = fechaMasReciente;
+            const datosCalculados = calcularEstadoYMesesAdeudados(afiliado);
+            afiliado.estadoPago = datosCalculados.estadoPago;
+            afiliado.mesesAdeudados = datosCalculados.mesesAdeudados;
+            await afiliado.save();
 
-              // Actualizar Mensualidad
-              for (const fecha of mesesPagados) {
-                const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-                const anio = fecha.getFullYear().toString();
-                await Mensualidad.findOneAndUpdate(
-                  { afiliadoId: afiliado._id, mes, anio },
-                  { pagado: true, fechaPago: new Date() },
-                  { upsert: true }
-                );
-              }
-
-              console.log('Afiliado actualizado desde webhook:', {
-                id: afiliado._id,
-                estadoPago: afiliado.estadoPago,
-                ultimoMesPagado: afiliado.ultimoMesPagado,
-              });
+            // Actualizar Mensualidad
+            for (const fecha of mesesPagados) {
+              const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+              const anio = fecha.getFullYear().toString();
+              await Mensualidad.findOneAndUpdate(
+                { afiliadoId: afiliado._id, mes, anio },
+                { pagado: true, fechaPago: new Date() },
+                { upsert: true }
+              );
             }
-          } else {
-            console.log('No se encontró pago pendiente para afiliadoId:', afiliadoId);
           }
         } else {
-          console.log('No se encontró afiliadoId en metadata');
+          console.log('No se encontró pago pendiente para la preferencia:', paymentDetails.metadata?.preference_id);
         }
       } else {
         console.log('Pago no aprobado, status:', paymentDetails.status);
@@ -351,39 +319,6 @@ export const reservarPago = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// ✅ FUNCIÓN COPIADA de tu afiliadoController que funciona
-const calcularMesesEntreFechas = (fechaInicio: Date, fechaFin: Date = new Date()): number => {
-  let meses = (fechaFin.getFullYear() - fechaInicio.getFullYear()) * 12;
-  meses += fechaFin.getMonth() - fechaInicio.getMonth();
-  if (fechaInicio.getDate() > fechaFin.getDate()) {
-    meses -= 1;
-  }
-  return Math.max(0, meses);
-};
-
-const calcularEstadoYMesesAdeudados = (afiliado: any): { estadoPago: string; mesesAdeudados: number } => {
-  const fechaActual = new Date();
-
-  if (afiliado.ultimoMesPagado) {
-    const ultimoMesPagado = new Date(afiliado.ultimoMesPagado);
-    const mesesAdeudados = calcularMesesEntreFechas(
-      new Date(ultimoMesPagado.getFullYear(), ultimoMesPagado.getMonth() + 1, 1),
-      fechaActual
-    );
-    return {
-      estadoPago: mesesAdeudados === 0 ? 'Al día' : 'Pendiente',
-      mesesAdeudados,
-    };
-  }
-
-  if (afiliado.fechaInicioPago) {
-    const fechaInicio = new Date(afiliado.fechaInicioPago);
-    const mesesAdeudados = calcularMesesEntreFechas(fechaInicio, fechaActual);
-    return {
-      estadoPago: mesesAdeudados === 0 ? 'Al día' : 'Pendiente',
-      mesesAdeudados,
-    };
-  }
-
-  return { estadoPago: 'Pendiente', mesesAdeudados: 0 };
-};
+function calcularEstadoYMesesAdeudados(afiliado: any): { estadoPago: string; mesesAdeudados: number } {
+  throw new Error('Function not implemented.');
+}
